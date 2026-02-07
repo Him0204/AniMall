@@ -9,6 +9,10 @@ html {
   height: 100%;
 }
 
+:root {
+  --header-height: 5rem;
+}
+
 body {
   min-height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
@@ -1160,8 +1164,8 @@ a {
   border-bottom: 1px solid #e5e7eb;
   padding: 1rem 0;
   position: sticky;
-  top: 0;
-  z-index: 50;
+  top: var(--header-height);
+  z-index: 850;
 }
 
 .filter-bar {
@@ -1530,6 +1534,10 @@ a {
 }
 
 @media (max-width: 767px) {
+  :root {
+    --header-height: 6rem;
+  }
+
   /* Show mobile nav when checked */
   .menu-toggle-input:checked ~ .header-actions ~ .header-actions,
   .header-actions:has(.menu-toggle-input:checked) ~ .mobile-nav {
