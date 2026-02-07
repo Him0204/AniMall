@@ -905,65 +905,46 @@ a {
   box-shadow: 0 10px 16px rgba(255, 140, 66, 0.22);
 }
 
-/* Desktop hover - show cart from right */
+/* Desktop hover - show cart from right (sibling selectors only, no :has()) */
 @media (hover: hover) and (pointer: fine) and (min-width: 768px) {
-  /* Small hover bridge extending from FAB to right edge only */
+  /* Hover bridge from FAB toward the cart drawer on the right */
   .cart-fab::before {
     content: '';
     position: absolute;
-    top: 50%;
+    top: -1rem;
     right: -2.2rem;
-    width: 2.5rem;
-    height: 56px;
-    transform: translateY(-50%);
+    width: 3rem;
+    height: calc(100% + 2rem);
     pointer-events: auto;
   }
-  
-  /* Browsers without :has() support */
-  @supports not (selector(:has(*))) {
-    .cart-fab:hover ~ .cart-overlay {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-    }
-    
-    .cart-fab:hover ~ .floating-cart {
-      transform: translateX(0);
-      pointer-events: auto;
-    }
-    
-    /* Keep cart visible when hovering overlay or cart itself */
-    .cart-overlay:hover ~ .floating-cart {
-      transform: translateX(0);
-      pointer-events: auto;
-    }
-    
-    .floating-cart:hover {
-      transform: translateX(0);
-      pointer-events: auto;
-    }
+
+  /* Show overlay + cart when hovering FAB */
+  .cart-fab:hover ~ .cart-overlay {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
-  
-  @supports (selector(:has(*))) {
-    .site-wrapper:has(.cart-toggle-input:not(:checked)):has(.cart-fab:hover) .cart-overlay,
-    .site-wrapper:has(.cart-toggle-input:not(:checked)):has(.floating-cart:hover) .cart-overlay {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-    }
-    
-    .site-wrapper:has(.cart-toggle-input:not(:checked)):has(.cart-fab:hover) .floating-cart,
-    .site-wrapper:has(.cart-toggle-input:not(:checked)):has(.floating-cart:hover) .floating-cart {
-      transform: translateX(0);
-      pointer-events: auto;
-    }
-    
-    /* Hide FAB visually when hovering (only if not checked) */
-    .site-wrapper:has(.cart-toggle-input:not(:checked)):has(.cart-fab:hover) .cart-fab,
-    .site-wrapper:has(.cart-toggle-input:not(:checked)):has(.floating-cart:hover) .cart-fab {
-      opacity: 0;
-      transform: scale(0.8);
-    }
+
+  .cart-fab:hover ~ .floating-cart {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  /* Keep cart open when hovering overlay or cart drawer itself */
+  .cart-overlay:hover ~ .floating-cart {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .cart-overlay:hover {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .floating-cart:hover {
+    transform: translateX(0);
+    pointer-events: auto;
   }
 }
 
