@@ -905,9 +905,8 @@ a {
   box-shadow: 0 10px 16px rgba(255, 140, 66, 0.22);
 }
 
-/* Desktop hover - show cart from right (sibling selectors only, no :has()) */
+/* Desktop hover - show cart from right */
 @media (hover: hover) and (pointer: fine) and (min-width: 768px) {
-  /* Hover bridge from FAB toward the cart drawer on the right */
   .cart-fab::before {
     content: '';
     position: absolute;
@@ -928,6 +927,13 @@ a {
   .cart-fab:hover ~ .floating-cart {
     transform: translateX(0);
     pointer-events: auto;
+  }
+
+  /* Hide FAB itself when hovering it */
+  .cart-fab:hover {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
   }
 
   /* Keep cart open when hovering overlay or cart drawer itself */
