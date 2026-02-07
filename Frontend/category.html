@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <title>AniMall - Dogs</title>
+</head>
+
+<body>
+  <!-- SVG Icon Sprite -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon-sprite" aria-hidden="true">
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <path d="M10 2a8 8 0 105.3 14l4.4 4.4 1.4-1.4-4.4-4.4A8 8 0 0010 2zm0 2a6 6 0 110 12A6 6 0 0110 4z"/>
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24">
+      <path d="M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3 1.4 1.4z"/>
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24">
+      <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+    </symbol>
+  </svg>
+
+  <div class="site-wrapper">
+    <!-- Shopping Cart Floating Button and Overlay -->
+    <input type="checkbox" id="cart-toggle" class="cart-toggle-input" aria-label="Toggle shopping cart">
+    <label for="cart-toggle" class="cart-fab" aria-label="Open shopping cart">
+      <img src="assets/img/icon-cart.png" alt="" class="cart-icon-img" aria-hidden="true">
+      <span class="cart-count" aria-label="2 items in cart">2</span>
+    </label>
+    <label for="cart-toggle" class="cart-overlay" aria-label="Close shopping cart overlay"></label>
+
+    <aside class="cart-drawer floating-cart" role="region" aria-label="Shopping cart">
+      <div class="cart-header">
+        <h2>Shopping Cart</h2>
+        <label for="cart-toggle" class="cart-close-btn" aria-label="Close cart">
+          <svg class="icon icon-lg"><use href="#i-close"></use></svg>
+        </label>
+      </div>
+
+      <div class="cart-content">
+        <ul class="cart-items">
+          <li class="cart-item">
+            <div class="cart-item-img">
+              <img src="assets/img/img001.webp" alt="Premium Dog Collar">
+            </div>
+            <div class="cart-item-info">
+              <div class="cart-item-name">Premium Dog Collar</div>
+              <div class="cart-item-price">HK$198</div>
+              <div class="cart-item-qty">
+                <label for="qty-1">Qty:</label>
+                <input type="number" id="qty-1" value="1" min="1" inputmode="numeric">
+              </div>
+            </div>
+          </li>
+
+          <li class="cart-item">
+            <div class="cart-item-img">
+              <img src="assets/img/img002.jpg" alt="Soft Cat Bed">
+            </div>
+            <div class="cart-item-info">
+              <div class="cart-item-name">Soft Cat Bed</div>
+              <div class="cart-item-price">HK$278</div>
+              <div class="cart-item-qty">
+                <label for="qty-2">Qty:</label>
+                <input type="number" id="qty-2" value="1" min="1" inputmode="numeric">
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="cart-footer">
+        <div class="cart-subtotal">
+          <span class="cart-subtotal-label">Subtotal:</span>
+          <span class="cart-subtotal-value">HK$476</span>
+        </div>
+        <button class="cart-checkout-btn" type="button">Proceed to Checkout</button>
+      </div>
+    </aside>
+
+    <!-- SHARED: HEADER -->
+    <header class="site-header" role="banner">
+      <div class="container">
+        <div class="header-main">
+          <div class="header-brand">
+            <a class="logo" href="index.html" aria-label="AniMall home">
+              <img class="logo-icon" src="assets/img/icon-paw.png" alt="AniMall" aria-hidden="true">
+              <span class="logo-text">AniMall</span>
+            </a>
+          </div>
+
+          <!-- Desktop Navigation -->
+          <nav class="header-nav desktop-nav" aria-label="Main navigation">
+            <ul class="primary-nav">
+              <li><a href="index.html">Home</a></li>
+              <li class="shop-menu">
+                <a href="category.html" aria-haspopup="true" aria-expanded="false">Shop</a>
+                <ul class="shop-submenu" aria-label="Shop categories">
+                  <li class="submenu-parent">
+                    <a href="category.html">Animals</a>
+                    <ul class="shop-subsubmenu">
+                      <li><a href="category.html">Dogs</a></li>
+                      <li><a href="category.html">Cats</a></li>
+                      <li><a href="category.html">Fish</a></li>
+                      <li><a href="category.html">Birds</a></li>
+                      <li><a href="category.html">Small Pets</a></li>
+                    </ul>
+                  </li>
+                  <li class="submenu-parent">
+                    <a href="category.html">Products</a>
+                    <ul class="shop-subsubmenu">
+                      <li><a href="category.html">Toys</a></li>
+                      <li><a href="category.html">Treats</a></li>
+                      <li><a href="category.html">Food</a></li>
+                      <li><a href="category.html">Care</a></li>
+                      <li><a href="category.html">Accessories</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li><a href="index.html#about">About Us</a></li>
+              <li><a href="index.html#contact">Contact Us</a></li>
+            </ul>
+          </nav>
+
+          <div class="header-actions">
+            <form class="search-bar" role="search" aria-label="Search AniMall">
+              <input type="text" placeholder="Search..." aria-label="Search for products">
+              <button type="button" aria-label="Submit search">
+                <svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg>
+              </button>
+            </form>
+            <button class="lang-btn" type="button" aria-label="Switch language">EN</button>
+            <button class="login-btn" type="button" aria-label="Login">Login</button>
+
+            <!-- Mobile Menu Toggle -->
+            <input type="checkbox" id="menu-toggle" class="menu-toggle-input" aria-label="Toggle menu">
+            <label for="menu-toggle" class="menu-toggle-btn" aria-label="Open menu">
+              <svg class="icon menu-icon" aria-hidden="true"><use href="#i-menu"></use></svg>
+              <svg class="icon close-icon" aria-hidden="true"><use href="#i-close"></use></svg>
+            </label>
+          </div>
+        </div>
+
+        <!-- Mobile Navigation Drawer -->
+        <nav class="mobile-nav" aria-label="Mobile navigation">
+          <ul class="mobile-nav-list">
+            <li><a href="index.html">Home</a></li>
+            <li class="mobile-shop-menu">
+              <input type="checkbox" id="shop-toggle" class="shop-toggle-input">
+              <label for="shop-toggle" class="mobile-shop-label">Shop</label>
+              <ul class="mobile-submenu">
+                <li class="mobile-submenu-parent">
+                  <input type="checkbox" id="animal-toggle" class="subsubmenu-toggle-input">
+                  <label for="animal-toggle" class="mobile-subsubmenu-label">Animals</label>
+                  <ul class="mobile-subsubmenu">
+                    <li><a href="category.html">Dogs</a></li>
+                    <li><a href="category.html">Cats</a></li>
+                    <li><a href="category.html">Fish</a></li>
+                    <li><a href="category.html">Birds</a></li>
+                    <li><a href="category.html">Small Pets</a></li>
+                  </ul>
+                </li>
+                <li class="mobile-submenu-parent">
+                  <input type="checkbox" id="product-toggle" class="subsubmenu-toggle-input">
+                  <label for="product-toggle" class="mobile-subsubmenu-label">Products</label>
+                  <ul class="mobile-subsubmenu">
+                    <li><a href="category.html">Toys</a></li>
+                    <li><a href="category.html">Treats</a></li>
+                    <li><a href="category.html">Food</a></li>
+                    <li><a href="category.html">Care</a></li>
+                    <li><a href="category.html">Accessories</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li><a href="index.html#about">About Us</a></li>
+            <li><a href="index.html#contact">Contact Us</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <!-- CATEGORY PAGE -->
+    <main id="category-page">
+
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="index.html">Home</a>
+        <span class="sep">›</span>
+        <span aria-current="page">Dogs</span>
+      </nav>
+
+      <section class="category-filters" aria-label="Filter products">
+        <div class="container">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <span class="filter-label">Filter by:</span>
+              <button class="filter-btn active" type="button">All</button>
+              <button class="filter-btn" type="button">Toys</button>
+              <button class="filter-btn" type="button">Food</button>
+              <button class="filter-btn" type="button">Accessories</button>
+              <button class="filter-btn" type="button">Care</button>
+            </div>
+            <div class="sort-group">
+              <label for="sort-select">Sort by:</label>
+              <select id="sort-select" aria-label="Sort products">
+                <option value="featured">Featured</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="newest">Newest</option>
+              </select>
+            </div>
+          </div>
+          <p class="results-count">Showing 4 products</p>
+        </div>
+      </section>
+
+      <section class="product-section" aria-label="Dog products">
+        <div class="container">
+          <div class="product-grid">
+
+            <article class="product-card">
+              <a class="product-image-link" href="product.html" aria-label="View Premium Dog Collar">
+                <div class="product-image">
+                  <img src="assets/img/img001.webp" alt="Premium Dog Collar">
+                </div>
+              </a>
+              <div class="product-info">
+                <a href="product.html" class="product-name">Premium Dog Collar</a>
+                <div class="product-tags">
+                  <span class="tag tag-animal">Dogs</span>
+                  <span class="tag tag-product">Accessories</span>
+                </div>
+                <div class="product-price">HK$198</div>
+                <button class="product-add-btn" type="button" aria-label="Add Premium Dog Collar to cart">Add to Cart</button>
+              </div>
+            </article>
+
+            <article class="product-card">
+              <a class="product-image-link" href="product.html" aria-label="View Durable Rope Dog Toy">
+                <div class="product-image">
+                  <img src="assets/img/img006.jpg" alt="Durable Rope Dog Toy">
+                </div>
+              </a>
+              <div class="product-info">
+                <a href="product.html" class="product-name">Durable Rope Dog Toy</a>
+                <div class="product-tags">
+                  <span class="tag tag-animal">Dogs</span>
+                  <span class="tag tag-product">Toys</span>
+                </div>
+                <div class="product-price">HK$78</div>
+                <button class="product-add-btn" type="button" aria-label="Add Durable Rope Dog Toy to cart">Add to Cart</button>
+              </div>
+            </article>
+
+            <article class="product-card">
+              <a class="product-image-link" href="product.html" aria-label="View Eco-Friendly Pet Travel Bag">
+                <div class="product-image">
+                  <img src="assets/img/img008.webp" alt="Eco-Friendly Pet Travel Bag">
+                </div>
+              </a>
+              <div class="product-info">
+                <a href="product.html" class="product-name">Eco-Friendly Pet Travel Bag</a>
+                <div class="product-tags">
+                  <span class="tag tag-animal">Dogs</span>
+                  <span class="tag tag-product">Accessories</span>
+                </div>
+                <div class="product-price">HK$318</div>
+                <button class="product-add-btn" type="button" aria-label="Add Eco-Friendly Pet Travel Bag to cart">Add to Cart</button>
+              </div>
+            </article>
+
+            <article class="product-card">
+              <a class="product-image-link" href="product.html" aria-label="View Premium Dog Food">
+                <div class="product-image">
+                  <img src="assets/img/img009.png" alt="Premium Dog Food">
+                </div>
+              </a>
+              <div class="product-info">
+                <a href="product.html" class="product-name">Premium Dog Food</a>
+                <div class="product-tags">
+                  <span class="tag tag-animal">Dogs</span>
+                  <span class="tag tag-product">Food</span>
+                </div>
+                <div class="product-price">HK$258</div>
+                <button class="product-add-btn" type="button" aria-label="Add Premium Dog Food to cart">Add to Cart</button>
+              </div>
+            </article>
+
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- SHARED: FOOTER -->
+    <footer class="site-footer" role="contentinfo">
+      <div class="container">
+        <div class="footer-content">
+          <section class="footer-section">
+            <h4>About AniMall</h4>
+            <ul>
+              <li><a href="index.html">About Us</a></li>
+              <li><a href="index.html">Careers</a></li>
+              <li><a href="index.html">Blog</a></li>
+            </ul>
+          </section>
+
+          <section class="footer-section">
+            <h4>Customer Service</h4>
+            <ul>
+              <li><a href="index.html">Contact Us</a></li>
+              <li><a href="index.html">FAQ</a></li>
+              <li><a href="index.html">Shipping Info</a></li>
+              <li><a href="index.html">Returns</a></li>
+            </ul>
+          </section>
+
+          <section class="footer-section">
+            <h4>Policies</h4>
+            <ul>
+              <li><a href="index.html">Privacy Policy</a></li>
+              <li><a href="index.html">Terms of Service</a></li>
+              <li><a href="index.html">Cookie Policy</a></li>
+            </ul>
+          </section>
+
+          <section class="footer-section">
+            <h4>Follow Us</h4>
+            <ul>
+              <li><a href="index.html">Facebook</a></li>
+              <li><a href="index.html">Instagram</a></li>
+              <li><a href="index.html">Twitter</a></li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="footer-bottom">
+          <p>&copy; 2026 AniMall (IERG4210 Assignment). All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
