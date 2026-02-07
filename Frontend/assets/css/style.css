@@ -454,11 +454,11 @@ a {
   color: #1a3a52;
 }
 
-.menu-toggle-input:checked ~ .menu-toggle-btn .menu-icon {
+.menu-toggle-input:checked ~ .header-main .menu-toggle-btn .menu-icon {
   display: none;
 }
 
-.menu-toggle-input:checked ~ .menu-toggle-btn .close-icon {
+.menu-toggle-input:checked ~ .header-main .menu-toggle-btn .close-icon {
   display: block;
 }
 
@@ -1539,8 +1539,7 @@ a {
   }
 
   /* Show mobile nav when checked */
-  .menu-toggle-input:checked ~ .header-actions ~ .header-actions,
-  .header-actions:has(.menu-toggle-input:checked) ~ .mobile-nav {
+  .menu-toggle-input:checked ~ .mobile-nav {
     display: block;
   }
 
@@ -1643,10 +1642,6 @@ a {
   }
 }
 
-/* Mobile nav visibility via sibling selector */
-.site-header:has(.menu-toggle-input:checked) .mobile-nav {
-  display: block;
-}
 
 @media (max-width: 480px) {
   .logo {
