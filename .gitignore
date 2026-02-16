@@ -1,8 +1,8 @@
 .github/*
 
-Phase 1/- ref/*
+Phase1_2A/- ref/*
 
-Phase 2/node_modules/*
-Phase 2/.env
-Phase 2/uploads/
-Phase 2/src/db/*.db
+Phase2B_3/node_modules/*
+Phase2B_3/.env
+Phase2B_3/uploads/
+Phase2B_3/src/db/*.db
