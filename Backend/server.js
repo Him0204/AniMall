@@ -9,8 +9,8 @@ const sqlite3 = require('sqlite3').verbose();
 
 const PORT = Number(process.env.PORT || 80);
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'db', 'animall.sqlite');
-const UPLOAD_DIR = path.resolve(__dirname, process.env.UPLOAD_DIR || '../Frontend/assets/uploads');
-const FRONTEND_DIR = path.resolve(__dirname, '../Frontend');
+const UPLOAD_DIR = path.resolve(__dirname, process.env.UPLOAD_DIR || '../Frontend/Ref/assets/uploads');
+const FRONTEND_DIR = path.resolve(__dirname, '../Frontend/Ref');
 const MAX_NAME_LENGTH = 120;
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
