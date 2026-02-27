@@ -20,7 +20,6 @@ app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
-app.use('/assets/img', express.static(path.resolve(__dirname, '../Phase1_2A/assets/img')));
 app.use(express.static(FRONTEND_DIR, { index: 'index.html' }));
 
 const db = new sqlite3.Database(DB_PATH);
