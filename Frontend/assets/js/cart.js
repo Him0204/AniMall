@@ -82,7 +82,12 @@ const Cart = (() => {
     let total = 0;
     const rows = pids.map((pid, i) => {
       const p = products[i];
-      if (!p) return '';
+      if (!p) {
+        const stale = load();
+        delete stale[pid];
+        save(stale);
+        return '';
+      }
       const qty = cart[pid];
       total += Number(p.price) * qty;
 
