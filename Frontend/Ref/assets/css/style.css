@@ -1747,23 +1747,3 @@ a {
 .admin-hint {
   color: #555;
 }
-
-.cart-empty {
-  margin: 0.25rem 0 0.75rem;
-  color: #666;
-}
-
-.cart-remove-btn {
-  margin-top: 0.55rem;
-  border: 1px solid #d43f3a;
-  background: #fff;
-  color: #d43f3a;
-  border-radius: 6px;
-  padding: 0.25rem 0.55rem;
-  cursor: pointer;
-}
-
-.cart-remove-btn:hover {
-  background: #d43f3a;
-  color: #fff;
-}
