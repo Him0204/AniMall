@@ -3,3 +3,4 @@ Backend/db/*.sqlite
 Frontend/assets/uploads/
 Frontend/Phase1 Ref/
 Backend/.env
+.github/
