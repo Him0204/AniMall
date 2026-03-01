@@ -284,11 +284,15 @@ app.post('/admin/products/delete', async (req, res) => {
   const pid = Number.parseInt(req.body.pid, 10);
   if (!Number.isInteger(pid)) return res.redirect('/admin?msg=Invalid product');
   try {
+    // Remove image files before deleting DB rows (ON DELETE CASCADE handles product_images)
+    const images = await allAsync('SELECT image_large, image_thumb FROM product_images WHERE pid = ?', [pid]);
     await runAsync('DELETE FROM products WHERE pid = ?', [pid]);
-    const files = [`pid_${pid}_large.jpg`, `pid_${pid}_thumb.jpg`];
-    files.forEach((file) => {
-      const filePath = path.join(UPLOAD_DIR, file);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    images.forEach(({ image_large, image_thumb }) => {
+      [image_large, image_thumb].forEach((rel) => {
+        if (!rel) return;
+        const abs = path.join(FRONTEND_DIR, rel);
+        if (fs.existsSync(abs)) fs.unlinkSync(abs);
+      });
     });
     res.redirect('/admin?msg=Product deleted');
   } catch {
