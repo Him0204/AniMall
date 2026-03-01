@@ -9,8 +9,8 @@ const sqlite3 = require('sqlite3').verbose();
 
 const PORT = Number(process.env.PORT || 80);
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'db', 'animall.sqlite');
-const UPLOAD_DIR = path.resolve(__dirname, process.env.UPLOAD_DIR || '../Frontend/Ref/assets/uploads');
-const FRONTEND_DIR = path.resolve(__dirname, '../Frontend/Ref');
+const UPLOAD_DIR = path.resolve(__dirname, process.env.UPLOAD_DIR || '../Frontend/assets/uploads');
+const FRONTEND_DIR = path.resolve(__dirname, '../Frontend');
 const MAX_NAME_LENGTH = 120;
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -124,14 +124,18 @@ app.get('/admin', async (req, res) => {
     const message = req.query.msg ? `<p class="admin-message">${String(req.query.msg).replace(/[<>&"']/g, '')}</p>` : '';
 
     res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - AniMall</title><link rel="stylesheet" href="/assets/css/style.css"></head>
-      <body><main class="admin-page"><h1>Admin Panel</h1>${message}<div class="admin-grid">
+      <body><div class="site-wrapper">
+      <header class="site-header" role="banner"><div class="container"><div class="header-main"><div class="header-brand"><a class="logo" href="/" aria-label="AniMall home"><img class="logo-icon" src="/assets/img/icon-paw.png" alt="" aria-hidden="true"><span class="logo-text">AniMall</span></a></div><nav class="header-nav desktop-nav" aria-label="Main navigation"><ul class="primary-nav"><li><a href="/">Home</a></li><li><a href="/admin">Admin</a></li></ul></nav></div></div></header>
+      <main class="admin-page"><h1>Admin Panel</h1>${message}<div class="admin-grid">
       <section class="admin-card"><h2>Create Category</h2><form method="post" action="/admin/categories"><label>Name <input name="name" maxlength="120" required></label><button type="submit">Create</button></form>
       <h2>Update Category</h2><form method="post" action="/admin/categories/update"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>New Name <input name="name" maxlength="120" required></label><button type="submit">Update</button></form>
       <h2>Delete Category</h2><form method="post" action="/admin/categories/delete"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><button type="submit">Delete</button></form></section>
       <section class="admin-card"><h2>Create Product</h2><form method="post" action="/admin/products" enctype="multipart/form-data"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>Name <input name="name" maxlength="120" required></label><label>Price <input name="price" type="number" min="0" step="0.01" required></label><label>Description <textarea name="description" rows="4" maxlength="1000"></textarea></label><label>Image (JPG/PNG <=10MB) <input name="image" type="file" accept=".jpg,.jpeg,.png"></label><button type="submit">Create</button></form>
       <h2>Update Product</h2><form method="post" action="/admin/products/update" enctype="multipart/form-data"><label>Product <select name="pid" required>${products.map((p) => `<option value="${p.pid}">${p.pid} - ${p.name}</option>`).join('')}</select></label><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>Name <input name="name" maxlength="120" required></label><label>Price <input name="price" type="number" min="0" step="0.01" required></label><label>Description <textarea name="description" rows="4" maxlength="1000"></textarea></label><label>Replace Image (optional) <input name="image" type="file" accept=".jpg,.jpeg,.png"></label><button type="submit">Update</button></form>
       <h2>Delete Product</h2><form method="post" action="/admin/products/delete"><label>Product <select name="pid" required>${products.map((p) => `<option value="${p.pid}">${p.pid} - ${p.name}</option>`).join('')}</select></label><button type="submit">Delete</button></form>
-      </section></div><p><a href="/">Back to Store</a></p></main></body></html>`);
+      </section></div><p><a href="/">Back to Store</a></p></main>
+      <footer class="site-footer" role="contentinfo"><div class="container"><div class="footer-bottom"><p>&copy; 2026 AniMall (IERG4210 Assignment).</p></div></div></footer>
+      </div></body></html>`);
   } catch {
     res.status(500).send('Admin panel unavailable.');
   }
