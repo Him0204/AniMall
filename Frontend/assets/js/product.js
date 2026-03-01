@@ -10,7 +10,6 @@
   const params = new URLSearchParams(window.location.search);
   const pid = Number.parseInt(params.get('pid') || '', 10);
 
-  // Wire up category nav links
   fetch('/api/categories').then((r) => r.json()).then((categories) => {
     document.querySelectorAll('[data-cat-name]').forEach((a) => {
       const cat = categories.find((c) => c.name.toLowerCase() === a.dataset.catName.toLowerCase());
@@ -64,7 +63,6 @@
       const product = await productRes.json();
       const images = imagesRes.ok ? await imagesRes.json() : [];
 
-      // Fall back to product.image_large if no rows in product_images
       const galleryImages = images.length > 0
         ? images
         : (product.image_large ? [{ image_large: product.image_large, image_thumb: product.image_large }] : []);
@@ -76,7 +74,6 @@
 
       if (galleryEl) galleryEl.innerHTML = buildGallery(galleryImages, product.name);
 
-      /* Phase 3 – wire Add to Cart button with pid */
       const addBtn = document.querySelector('.product-add-btn');
       if (addBtn) addBtn.dataset.pid = String(product.pid);
 

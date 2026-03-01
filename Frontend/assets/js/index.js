@@ -11,7 +11,6 @@
   let selectedCatid = Number.parseInt(params.get('catid') || '', 10) || 'all';
   let activeFilter = params.get('type') || 'all';
 
-  // Set type nav links href
   document.querySelectorAll('[data-type]').forEach((a) => {
     a.href = `index.html?type=${encodeURIComponent(a.dataset.type)}`;
   });
@@ -80,7 +79,6 @@
   }
 
   function buildCategoryTabs(categories) {
-    // Update [data-cat-name] nav links with correct catid hrefs
     document.querySelectorAll('[data-cat-name]').forEach((a) => {
       const cat = categories.find((c) => c.name.toLowerCase() === a.dataset.catName.toLowerCase());
       if (cat) a.href = `index.html?catid=${cat.catid}`;
@@ -96,7 +94,6 @@
       categoryTabs.appendChild(btn);
     });
 
-    // Set active state
     categoryTabs.querySelectorAll('[data-catid]').forEach((btn) => {
       const val = btn.dataset.catid === 'all' ? 'all' : Number(btn.dataset.catid);
       btn.classList.toggle('active', val === selectedCatid);
@@ -112,7 +109,6 @@
       categoryTabs.querySelectorAll('[data-catid]').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
 
-      // Reset type filter
       activeFilter = 'all';
       document.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('active', b.dataset.filter === 'all'));
 
@@ -144,7 +140,6 @@
 
   async function load() {
     try {
-      // Apply initial type filter active state from URL
       document.querySelectorAll('[data-filter]').forEach((b) => {
         b.classList.toggle('active', b.dataset.filter === activeFilter);
       });
@@ -165,7 +160,6 @@
     }
   }
 
-  // Wire up type filter buttons
   document.querySelectorAll('[data-filter]').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('[data-filter]').forEach((b) => b.classList.remove('active'));
@@ -175,7 +169,6 @@
     });
   });
 
-  // Wire up sort select
   if (sortSelect) sortSelect.addEventListener('change', applyFilterSort);
 
   load();

@@ -1,8 +1,3 @@
-/* ============================================================
-   AniMall – AJAX Shopping Cart  (Phase 3)
-   Stored in localStorage as { pid: quantity }
-   Product name/price always fetched from backend via AJAX.
-   ============================================================ */
 const Cart = (() => {
   const KEY = 'animall_cart';
 
@@ -74,10 +69,8 @@ const Cart = (() => {
       return;
     }
 
-    /* Show loading state while fetching */
     contentEl.innerHTML = '<p class="cart-loading">Loading…</p>';
 
-    /* Fetch product details for every item via AJAX – no hardcoding */
     const products = await Promise.all(
       pids.map((pid) =>
         fetch(`/api/product/${encodeURIComponent(pid)}`)
@@ -89,7 +82,7 @@ const Cart = (() => {
     let total = 0;
     const rows = pids.map((pid, i) => {
       const p = products[i];
-      if (!p) return '';           /* skip if product no longer exists */
+      if (!p) return '';
       const qty = cart[pid];
       total += Number(p.price) * qty;
 
@@ -123,13 +116,12 @@ const Cart = (() => {
     if (!rows.filter(Boolean).length && subtotalEl) subtotalEl.textContent = 'HK$0.00';
   }
 
-  /* ---- event delegation (works on both pages) ---- */
+  /* ---- event delegation ---- */
   document.addEventListener('click', (e) => {
-    /* Add to Cart buttons on product cards and product detail page */
     const addBtn = e.target.closest('.product-add-btn[data-pid]');
     if (addBtn) {
       add(addBtn.dataset.pid);
-      /* Brief visual feedback */
+
       const orig = addBtn.textContent;
       addBtn.textContent = 'Added!';
       addBtn.disabled = true;
@@ -137,7 +129,6 @@ const Cart = (() => {
       return;
     }
 
-    /* Qty +/- buttons inside the cart drawer */
     const qtyBtn = e.target.closest('.cart-qty-btn');
     if (qtyBtn) {
       const pid = qtyBtn.dataset.pid;
@@ -148,7 +139,6 @@ const Cart = (() => {
       return;
     }
 
-    /* Remove buttons inside the cart drawer */
     const removeBtn = e.target.closest('.cart-remove-btn');
     if (removeBtn) {
       remove(removeBtn.dataset.pid);
