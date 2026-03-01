@@ -3,14 +3,21 @@
   const loadError = document.getElementById('load-error');
   const resultsCount = document.getElementById('results-count');
   const sortSelect = document.getElementById('sort-select');
+  const categoryTabs = document.getElementById('category-tabs');
+  const breadcrumbSep = document.getElementById('breadcrumb-sep');
+  const breadcrumbCurrent = document.getElementById('breadcrumb-current');
 
-  const isCategoryPage = window.location.pathname.includes('category.html');
   const params = new URLSearchParams(window.location.search);
-  let selectedCatid = Number.parseInt(params.get('catid') || '', 10);
+  let selectedCatid = Number.parseInt(params.get('catid') || '', 10) || 'all';
+  let activeFilter = params.get('type') || 'all';
 
-  // All loaded products for current view (used for client-side filter/sort)
+  // Set type nav links href
+  document.querySelectorAll('[data-type]').forEach((a) => {
+    a.href = `index.html?type=${encodeURIComponent(a.dataset.type)}`;
+  });
+
+  let allCategories = [];
   let allProducts = [];
-  let activeFilter = 'all';
 
   const escapeHtml = (value) => String(value)
     .replaceAll('&', '&amp;')
@@ -43,12 +50,10 @@
   function applyFilterSort() {
     let list = allProducts.slice();
 
-    // Filter by product type
     if (activeFilter !== 'all') {
       list = list.filter((p) => (p.type || '') === activeFilter);
     }
 
-    // Client-side sort
     const sortVal = sortSelect ? sortSelect.value : 'featured';
     if (sortVal === 'price-low') list.sort((a, b) => a.price - b.price);
     else if (sortVal === 'price-high') list.sort((a, b) => b.price - a.price);
@@ -60,60 +65,110 @@
     productGrid.innerHTML = list.map((p) => productCard(p, p._catName)).join('');
   }
 
-  async function loadCategoryPage() {
-    const categoriesRes = await fetch('/api/categories');
-    const categories = await categoriesRes.json();
-    if (!categories.length) return;
-
-    if (!selectedCatid || !categories.find((c) => c.catid === selectedCatid)) {
-      selectedCatid = categories[0].catid;
-      window.history.replaceState({}, '', `category.html?catid=${selectedCatid}`);
+  function updateBreadcrumb() {
+    if (selectedCatid === 'all') {
+      if (breadcrumbSep) breadcrumbSep.hidden = true;
+      if (breadcrumbCurrent) breadcrumbCurrent.hidden = true;
+    } else {
+      const cat = allCategories.find((c) => c.catid === selectedCatid);
+      if (cat && breadcrumbCurrent) {
+        breadcrumbCurrent.textContent = cat.name;
+        breadcrumbCurrent.hidden = false;
+        if (breadcrumbSep) breadcrumbSep.hidden = false;
+      }
     }
-
-    // Update breadcrumb
-    const selectedCat = categories.find((c) => c.catid === selectedCatid);
-    const breadcrumbCurrent = document.getElementById('breadcrumb-current');
-    if (breadcrumbCurrent && selectedCat) breadcrumbCurrent.textContent = selectedCat.name;
-
-    const res = await fetch(`/api/products?catid=${selectedCatid}`);
-    const products = await res.json();
-    const catName = selectedCat ? selectedCat.name : '';
-    allProducts = products.map((p) => ({ ...p, _catName: catName }));
-    applyFilterSort();
   }
 
-  async function loadIndexPage() {
-    const categoriesRes = await fetch('/api/categories');
-    const categories = await categoriesRes.json();
+  function buildCategoryTabs(categories) {
+    // Update [data-cat-name] nav links with correct catid hrefs
+    document.querySelectorAll('[data-cat-name]').forEach((a) => {
+      const cat = categories.find((c) => c.name.toLowerCase() === a.dataset.catName.toLowerCase());
+      if (cat) a.href = `index.html?catid=${cat.catid}`;
+    });
 
-    const all = await Promise.all(
-      categories.map(async (cat) => {
-        const res = await fetch(`/api/products?catid=${cat.catid}`);
-        const products = await res.json();
-        return products.map((p) => ({ ...p, _catName: cat.name }));
-      })
-    );
+    const allBtn = categoryTabs.querySelector('[data-catid="all"]');
+    categories.forEach((cat) => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.type = 'button';
+      btn.dataset.catid = cat.catid;
+      btn.textContent = cat.name;
+      categoryTabs.appendChild(btn);
+    });
 
-    allProducts = all.flat();
-    productGrid.innerHTML = allProducts.map((p) => productCard(p, p._catName)).join('');
+    // Set active state
+    categoryTabs.querySelectorAll('[data-catid]').forEach((btn) => {
+      const val = btn.dataset.catid === 'all' ? 'all' : Number(btn.dataset.catid);
+      btn.classList.toggle('active', val === selectedCatid);
+    });
+
+    categoryTabs.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-catid]');
+      if (!btn) return;
+      const val = btn.dataset.catid === 'all' ? 'all' : Number(btn.dataset.catid);
+      if (val === selectedCatid) return;
+      selectedCatid = val;
+
+      categoryTabs.querySelectorAll('[data-catid]').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Reset type filter
+      activeFilter = 'all';
+      document.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('active', b.dataset.filter === 'all'));
+
+      const url = selectedCatid === 'all' ? 'index.html' : `index.html?catid=${selectedCatid}`;
+      window.history.pushState({}, '', url);
+      updateBreadcrumb();
+      await fetchProducts();
+    });
+  }
+
+  async function fetchProducts() {
+    if (selectedCatid === 'all') {
+      const all = await Promise.all(
+        allCategories.map(async (cat) => {
+          const res = await fetch(`/api/products?catid=${cat.catid}`);
+          const products = await res.json();
+          return products.map((p) => ({ ...p, _catName: cat.name }));
+        })
+      );
+      allProducts = all.flat();
+    } else {
+      const cat = allCategories.find((c) => c.catid === selectedCatid);
+      const res = await fetch(`/api/products?catid=${selectedCatid}`);
+      const products = await res.json();
+      allProducts = products.map((p) => ({ ...p, _catName: cat ? cat.name : '' }));
+    }
+    applyFilterSort();
   }
 
   async function load() {
     try {
-      if (isCategoryPage) {
-        await loadCategoryPage();
-      } else {
-        await loadIndexPage();
+      // Apply initial type filter active state from URL
+      document.querySelectorAll('[data-filter]').forEach((b) => {
+        b.classList.toggle('active', b.dataset.filter === activeFilter);
+      });
+
+      const res = await fetch('/api/categories');
+      allCategories = await res.json();
+
+      if (selectedCatid !== 'all' && !allCategories.find((c) => c.catid === selectedCatid)) {
+        selectedCatid = 'all';
+        window.history.replaceState({}, '', 'index.html');
       }
+
+      buildCategoryTabs(allCategories);
+      updateBreadcrumb();
+      await fetchProducts();
     } catch {
       if (loadError) loadError.hidden = false;
     }
   }
 
-  // Wire up filter buttons (category page only)
-  document.querySelectorAll('.filter-btn').forEach((btn) => {
+  // Wire up type filter buttons
+  document.querySelectorAll('[data-filter]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('[data-filter]').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       activeFilter = btn.dataset.filter;
       applyFilterSort();
@@ -121,9 +176,8 @@
   });
 
   // Wire up sort select
-  if (sortSelect) {
-    sortSelect.addEventListener('change', applyFilterSort);
-  }
+  if (sortSelect) sortSelect.addEventListener('change', applyFilterSort);
 
   load();
 })();
+

@@ -10,6 +10,14 @@
   const params = new URLSearchParams(window.location.search);
   const pid = Number.parseInt(params.get('pid') || '', 10);
 
+  // Wire up category nav links
+  fetch('/api/categories').then((r) => r.json()).then((categories) => {
+    document.querySelectorAll('[data-cat-name]').forEach((a) => {
+      const cat = categories.find((c) => c.name.toLowerCase() === a.dataset.catName.toLowerCase());
+      if (cat) a.href = `index.html?catid=${cat.catid}`;
+    });
+  }).catch(() => {});
+
   const escapeHtml = (value) => String(value)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -68,7 +76,7 @@
 
       if (galleryEl) galleryEl.innerHTML = buildGallery(galleryImages, product.name);
 
-      breadcrumbs.innerHTML = `<a href="index.html">Home</a><span class="sep">›</span><a href="category.html?catid=${product.catid}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
+      breadcrumbs.innerHTML = `<a href="index.html">Home</a><span class="sep">›</span><a href="index.html?catid=${product.catid}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
       detailSection.hidden = false;
     } catch {
       errorBox.hidden = false;

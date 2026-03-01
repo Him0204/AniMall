@@ -62,26 +62,26 @@
             <ul class="primary-nav">
               <li><a href="index.html">Home</a></li>
               <li class="shop-menu">
-                <a href="category.html" aria-haspopup="true">Shop</a>
+                <a href="index.html" aria-haspopup="true">Shop</a>
                 <ul class="shop-submenu" aria-label="Shop categories">
                   <li class="submenu-parent">
-                    <a href="category.html">Animals</a>
+                    <a href="index.html">Animals</a>
                     <ul class="shop-subsubmenu">
-                      <li><a href="category.html">Dogs</a></li>
-                      <li><a href="category.html">Cats</a></li>
-                      <li><a href="category.html">Fish</a></li>
-                      <li><a href="category.html">Birds</a></li>
-                      <li><a href="category.html">Small Pets</a></li>
+                      <li><a href="index.html" data-cat-name="Dogs">Dogs</a></li>
+                      <li><a href="index.html" data-cat-name="Cats">Cats</a></li>
+                      <li><a href="index.html" data-cat-name="Fish">Fish</a></li>
+                      <li><a href="index.html" data-cat-name="Birds">Birds</a></li>
+                      <li><a href="index.html" data-cat-name="Small Pets">Small Pets</a></li>
                     </ul>
                   </li>
                   <li class="submenu-parent">
-                    <a href="category.html">Products</a>
+                    <a href="index.html">Products</a>
                     <ul class="shop-subsubmenu">
-                      <li><a href="category.html">Toys</a></li>
-                      <li><a href="category.html">Treats</a></li>
-                      <li><a href="category.html">Food</a></li>
-                      <li><a href="category.html">Care</a></li>
-                      <li><a href="category.html">Accessories</a></li>
+                      <li><a href="index.html" data-type="Toys">Toys</a></li>
+                      <li><a href="index.html" data-type="Treats">Treats</a></li>
+                      <li><a href="index.html" data-type="Food">Food</a></li>
+                      <li><a href="index.html" data-type="Care">Care</a></li>
+                      <li><a href="index.html" data-type="Accessories">Accessories</a></li>
                     </ul>
                   </li>
                 </ul>
@@ -122,22 +122,22 @@
                   <input type="checkbox" id="animal-toggle" class="subsubmenu-toggle-input" aria-label="Toggle animal categories">
                   <label for="animal-toggle" class="mobile-subsubmenu-label">Animals</label>
                   <ul class="mobile-subsubmenu">
-                    <li><a href="category.html">Dogs</a></li>
-                    <li><a href="category.html">Cats</a></li>
-                    <li><a href="category.html">Fish</a></li>
-                    <li><a href="category.html">Birds</a></li>
-                    <li><a href="category.html">Small Pets</a></li>
+                    <li><a href="index.html" data-cat-name="Dogs">Dogs</a></li>
+                    <li><a href="index.html" data-cat-name="Cats">Cats</a></li>
+                    <li><a href="index.html" data-cat-name="Fish">Fish</a></li>
+                    <li><a href="index.html" data-cat-name="Birds">Birds</a></li>
+                    <li><a href="index.html" data-cat-name="Small Pets">Small Pets</a></li>
                   </ul>
                 </li>
                 <li class="mobile-submenu-parent">
                   <input type="checkbox" id="product-toggle" class="subsubmenu-toggle-input" aria-label="Toggle product categories">
                   <label for="product-toggle" class="mobile-subsubmenu-label">Products</label>
                   <ul class="mobile-subsubmenu">
-                    <li><a href="category.html">Toys</a></li>
-                    <li><a href="category.html">Treats</a></li>
-                    <li><a href="category.html">Food</a></li>
-                    <li><a href="category.html">Care</a></li>
-                    <li><a href="category.html">Accessories</a></li>
+                    <li><a href="index.html" data-type="Toys">Toys</a></li>
+                    <li><a href="index.html" data-type="Treats">Treats</a></li>
+                    <li><a href="index.html" data-type="Food">Food</a></li>
+                    <li><a href="index.html" data-type="Care">Care</a></li>
+                    <li><a href="index.html" data-type="Accessories">Accessories</a></li>
                   </ul>
                 </li>
               </ul>
@@ -153,10 +153,6 @@
     <!-- HOME PAGE -->
     <main id="home-page">
 
-      <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <span aria-current="page">Home</span>
-      </nav>
-
       <section class="hero" aria-label="Hero">
         <div class="hero-content">
           <h1>Everything Your Pet Loves</h1>
@@ -165,10 +161,51 @@
         </div>
       </section>
 
-      <section class="product-section" aria-label="Featured products">
-        <h2 class="section-title">Featured Products</h2>
-        <p id="load-error" class="error-text" hidden>Unable to load products right now.</p>
-        <div class="product-grid" id="product-grid"></div>
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="index.html">Home</a>
+        <span class="sep" id="breadcrumb-sep" hidden>›</span>
+        <span id="breadcrumb-current" aria-current="page" hidden></span>
+      </nav>
+
+      <section class="category-filters" aria-label="Filter products">
+        <div class="container">
+          <div class="filter-bar">
+            <div class="filter-row">
+              <div class="filter-group" id="category-tabs">
+                <span class="filter-label">Category:</span>
+                <button class="filter-btn active" type="button" data-catid="all">All</button>
+              </div>
+              <div class="sort-group">
+                <label for="sort-select">Sort by:</label>
+                <select id="sort-select" aria-label="Sort products">
+                  <option value="featured">Featured</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="newest">Newest</option>
+                </select>
+              </div>
+            </div>
+            <div class="filter-row">
+              <div class="filter-group">
+                <span class="filter-label">Type:</span>
+                <button class="filter-btn active" type="button" data-filter="all">All</button>
+                <button class="filter-btn" type="button" data-filter="Toys">Toys</button>
+                <button class="filter-btn" type="button" data-filter="Food">Food</button>
+                <button class="filter-btn" type="button" data-filter="Treats">Treats</button>
+                <button class="filter-btn" type="button" data-filter="Accessories">Accessories</button>
+                <button class="filter-btn" type="button" data-filter="Care">Care</button>
+              </div>
+            </div>
+          </div>
+          <p class="results-count" id="results-count"></p>
+        </div>
+      </section>
+
+      <section class="product-section" aria-label="Products">
+        <div class="container">
+          <p id="load-error" class="error-text" hidden>Unable to load products right now.</p>
+          <div class="product-grid" id="product-grid"></div>
+        </div>
       </section>
     </main>
 
