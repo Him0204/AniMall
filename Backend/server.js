@@ -284,7 +284,6 @@ app.post('/admin/products/delete', async (req, res) => {
   const pid = Number.parseInt(req.body.pid, 10);
   if (!Number.isInteger(pid)) return res.redirect('/admin?msg=Invalid product');
   try {
-    // Remove image files before deleting DB rows (ON DELETE CASCADE handles product_images)
     const images = await allAsync('SELECT image_large, image_thumb FROM product_images WHERE pid = ?', [pid]);
     await runAsync('DELETE FROM products WHERE pid = ?', [pid]);
     images.forEach(({ image_large, image_thumb }) => {
