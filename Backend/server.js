@@ -79,10 +79,6 @@ async function saveProductImages(pid, fileBuffer) {
   await runAsync('UPDATE products SET image_large = ?, image_thumb = ? WHERE pid = ?', [largeRel, thumbRel, pid]);
 }
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
 app.get('/api/categories', async (req, res) => {
   try {
     const rows = await allAsync('SELECT catid, name FROM categories ORDER BY catid');

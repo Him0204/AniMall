@@ -13,10 +13,6 @@
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 
-  function categoryHref(catid) {
-    return `${window.location.pathname}?catid=${catid}`;
-  }
-
   async function load() {
     try {
       const categoriesResponse = await fetch('/api/categories');
@@ -24,11 +20,11 @@
       if (!categories.length) return;
       if (!selectedCatid || !categories.find((c) => c.catid === selectedCatid)) {
         selectedCatid = categories[0].catid;
-        window.history.replaceState({}, '', categoryHref(selectedCatid));
+        window.history.replaceState({}, '', `/?catid=${selectedCatid}`);
       }
       renderCategories(categories);
       await loadProducts(selectedCatid);
-    } catch {
+    } catch (err) {
       loadError.hidden = false;
     }
   }
@@ -36,35 +32,27 @@
   function renderCategories(categories) {
     categoryList.innerHTML = categories.map((category) => {
       const activeClass = category.catid === selectedCatid ? 'is-active' : '';
-      return `<a class="category-pill ${activeClass}" href="${categoryHref(category.catid)}">${escapeHtml(category.name)}</a>`;
+      return `<a class="category-pill ${activeClass}" href="/?catid=${category.catid}">${escapeHtml(category.name)}</a>`;
     }).join('');
   }
 
   async function loadProducts(catid) {
     const response = await fetch(`/api/products?catid=${catid}`);
     const products = await response.json();
-    productGrid.innerHTML = products.map((product) => {
-      const imagePath = product.image_thumb || 'assets/img/img001.webp';
-      const price = Number(product.price).toFixed(2);
-      return `
+    productGrid.innerHTML = products.map((product) => `
       <article class="product-card">
         <a class="product-image-link" href="/product.html?pid=${product.pid}" aria-label="View ${escapeHtml(product.name)}">
           <div class="product-image">
-            <img src="${escapeHtml(imagePath)}" alt="${escapeHtml(product.name)}">
+            <img src="${escapeHtml(product.image_thumb || 'assets/img/img001.webp')}" alt="${escapeHtml(product.name)}">
           </div>
         </a>
         <div class="product-info">
           <a href="/product.html?pid=${product.pid}" class="product-name">${escapeHtml(product.name)}</a>
-          <div class="product-price">HK$${price}</div>
-          <button class="product-add-btn js-add-to-cart" type="button"
-            data-pid="${product.pid}"
-            data-name="${escapeHtml(product.name)}"
-            data-price="${product.price}"
-            data-image="${escapeHtml(imagePath)}">Add to Cart</button>
+          <div class="product-price">HK$${Number(product.price).toFixed(2)}</div>
+          <button class="product-add-btn" type="button">Add to Cart</button>
         </div>
       </article>
-    `;
-    }).join('');
+    `).join('');
   }
 
   load();

@@ -6,7 +6,6 @@
   const priceEl = document.getElementById('product-price');
   const descriptionEl = document.getElementById('product-description');
   const imageEl = document.getElementById('product-image');
-  const addBtn = document.getElementById('product-add-btn');
 
   const params = new URLSearchParams(window.location.search);
   const pid = Number.parseInt(params.get('pid') || '', 10);
@@ -34,15 +33,9 @@
       descriptionEl.textContent = product.description || 'No description provided.';
       imageEl.src = product.image_large || 'assets/img/img001.webp';
       imageEl.alt = product.name;
-
-      addBtn.dataset.pid = String(product.pid);
-      addBtn.dataset.name = product.name;
-      addBtn.dataset.price = String(product.price);
-      addBtn.dataset.image = product.image_large || 'assets/img/img001.webp';
-
-      breadcrumbs.innerHTML = `<a href="/index.html">Home</a><span class="sep">›</span><a href="/category.html?catid=${product.catid}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
+      breadcrumbs.innerHTML = `<a href="/index.html">Home</a><span class="sep">›</span><a href="/index.html?catid=${product.catid}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
       detailSection.hidden = false;
-    } catch {
+    } catch (err) {
       errorBox.hidden = false;
     }
   }

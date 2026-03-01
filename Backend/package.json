@@ -4,8 +4,7 @@
   "private": true,
   "main": "server.js",
   "scripts": {
-    "migrate-db": "node db/migrate.js",
-    "init-db": "node db/migrate.js",
+    "init-db": "node db/init.js",
     "start": "node server.js"
   },
   "dependencies": {
