@@ -20,6 +20,7 @@
     .replaceAll("'", '&#39;');
 
   function productCard(product, catName) {
+    const typeTag = product.type ? `<span class="tag tag-product">${escapeHtml(product.type)}</span>` : '';
     return `
       <article class="product-card">
         <a class="product-image-link" href="product.html?pid=${product.pid}" aria-label="View ${escapeHtml(product.name)}">
@@ -31,6 +32,7 @@
           <a href="product.html?pid=${product.pid}" class="product-name">${escapeHtml(product.name)}</a>
           <div class="product-tags">
             <span class="tag tag-animal">${escapeHtml(catName)}</span>
+            ${typeTag}
           </div>
           <div class="product-price">HK$${Number(product.price).toFixed(2)}</div>
           <button class="product-add-btn" type="button" aria-label="Add ${escapeHtml(product.name)} to cart">Add to Cart</button>
@@ -41,9 +43,9 @@
   function applyFilterSort() {
     let list = allProducts.slice();
 
-    // Client-side keyword filter
+    // Filter by product type
     if (activeFilter !== 'all') {
-      list = list.filter((p) => p.name.toLowerCase().includes(activeFilter));
+      list = list.filter((p) => (p.type || '') === activeFilter);
     }
 
     // Client-side sort

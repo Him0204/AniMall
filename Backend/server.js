@@ -60,14 +60,21 @@ function sanitizeName(name) {
   return value;
 }
 
+const VALID_TYPES = new Set(['Toys', 'Food', 'Treats', 'Accessories', 'Care']);
+
 function sanitizePrice(price) {
   const parsed = Number(price);
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return parsed;
 }
 
-async function saveProductImages(pid, fileBuffer) {
-  const base = `pid_${pid}`;
+function sanitizeType(type) {
+  const value = String(type || '').trim();
+  return VALID_TYPES.has(value) ? value : null;
+}
+
+async function saveProductImage(pid, fileBuffer, sortOrder) {
+  const base = `pid_${pid}_${sortOrder}`;
   const largeRel = `assets/uploads/${base}_large.jpg`;
   const thumbRel = `assets/uploads/${base}_thumb.jpg`;
   const largeAbs = path.join(FRONTEND_DIR, largeRel);
@@ -76,7 +83,14 @@ async function saveProductImages(pid, fileBuffer) {
   await sharp(fileBuffer).resize({ width: 900, withoutEnlargement: true }).jpeg({ quality: 85 }).toFile(largeAbs);
   await sharp(fileBuffer).resize({ width: 300, withoutEnlargement: true }).jpeg({ quality: 82 }).toFile(thumbAbs);
 
-  await runAsync('UPDATE products SET image_large = ?, image_thumb = ? WHERE pid = ?', [largeRel, thumbRel, pid]);
+  await runAsync(
+    'INSERT INTO product_images (pid, sort_order, image_large, image_thumb) VALUES (?, ?, ?, ?)',
+    [pid, sortOrder, largeRel, thumbRel]
+  );
+  // Keep products table in sync with first image for grid listings
+  if (sortOrder === 0) {
+    await runAsync('UPDATE products SET image_large = ?, image_thumb = ? WHERE pid = ?', [largeRel, thumbRel, pid]);
+  }
 }
 
 app.get('/api/categories', async (req, res) => {
@@ -92,10 +106,24 @@ app.get('/api/products', async (req, res) => {
   const catid = Number.parseInt(req.query.catid, 10);
   if (!Number.isInteger(catid) || catid < 1) return res.status(400).json({ error: 'Invalid category.' });
   try {
-    const rows = await allAsync('SELECT pid, catid, name, price, image_thumb FROM products WHERE catid = ? ORDER BY pid', [catid]);
+    const rows = await allAsync('SELECT pid, catid, name, price, type, image_thumb FROM products WHERE catid = ? ORDER BY pid', [catid]);
     res.json(rows);
   } catch {
     res.status(500).json({ error: 'Unable to fetch products.' });
+  }
+});
+
+app.get('/api/product/:pid/images', async (req, res) => {
+  const pid = Number.parseInt(req.params.pid, 10);
+  if (!Number.isInteger(pid) || pid < 1) return res.status(400).json({ error: 'Invalid product.' });
+  try {
+    const rows = await allAsync(
+      'SELECT imgid, sort_order, image_large, image_thumb FROM product_images WHERE pid = ? ORDER BY sort_order',
+      [pid]
+    );
+    res.json(rows);
+  } catch {
+    res.status(500).json({ error: 'Unable to fetch images.' });
   }
 });
 
@@ -104,7 +132,7 @@ app.get('/api/product/:pid', async (req, res) => {
   if (!Number.isInteger(pid) || pid < 1) return res.status(400).json({ error: 'Invalid product.' });
   try {
     const row = await getAsync(
-      `SELECT p.pid, p.catid, p.name, p.price, p.description, p.image_large, c.name AS category_name
+      `SELECT p.pid, p.catid, p.name, p.price, p.description, p.type, p.image_large, c.name AS category_name
        FROM products p JOIN categories c ON c.catid = p.catid WHERE p.pid = ?`,
       [pid]
     );
@@ -130,8 +158,8 @@ app.get('/admin', async (req, res) => {
       <section class="admin-card"><h2>Create Category</h2><form method="post" action="/admin/categories"><label>Name <input name="name" maxlength="120" required></label><button type="submit">Create</button></form>
       <h2>Update Category</h2><form method="post" action="/admin/categories/update"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>New Name <input name="name" maxlength="120" required></label><button type="submit">Update</button></form>
       <h2>Delete Category</h2><form method="post" action="/admin/categories/delete"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><button type="submit">Delete</button></form></section>
-      <section class="admin-card"><h2>Create Product</h2><form method="post" action="/admin/products" enctype="multipart/form-data"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>Name <input name="name" maxlength="120" required></label><label>Price <input name="price" type="number" min="0" step="0.01" required></label><label>Description <textarea name="description" rows="4" maxlength="1000"></textarea></label><label>Image (JPG/PNG <=10MB) <input name="image" type="file" accept=".jpg,.jpeg,.png"></label><button type="submit">Create</button></form>
-      <h2>Update Product</h2><form method="post" action="/admin/products/update" enctype="multipart/form-data"><label>Product <select name="pid" required>${products.map((p) => `<option value="${p.pid}">${p.pid} - ${p.name}</option>`).join('')}</select></label><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>Name <input name="name" maxlength="120" required></label><label>Price <input name="price" type="number" min="0" step="0.01" required></label><label>Description <textarea name="description" rows="4" maxlength="1000"></textarea></label><label>Replace Image (optional) <input name="image" type="file" accept=".jpg,.jpeg,.png"></label><button type="submit">Update</button></form>
+      <section class="admin-card"><h2>Create Product</h2><form method="post" action="/admin/products" enctype="multipart/form-data"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>Name <input name="name" maxlength="120" required></label><label>Price <input name="price" type="number" min="0" step="0.01" required></label><label>Description <textarea name="description" rows="4" maxlength="1000"></textarea></label><label>Type <select name="type" required><option value="Toys">Toys</option><option value="Food">Food</option><option value="Treats">Treats</option><option value="Accessories" selected>Accessories</option><option value="Care">Care</option></select></label><label>Images (JPG/PNG, up to 8) <input name="images" type="file" accept=".jpg,.jpeg,.png" multiple></label><button type="submit">Create</button></form>
+      <h2>Update Product</h2><form method="post" action="/admin/products/update" enctype="multipart/form-data"><label>Product <select name="pid" required>${products.map((p) => `<option value="${p.pid}">${p.pid} - ${p.name}</option>`).join('')}</select></label><label>Category (optional) <select name="catid"><option value="">-- keep existing --</option>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>Name (optional) <input name="name" maxlength="120" placeholder="leave blank to keep existing"></label><label>Price (optional) <input name="price" type="number" min="0" step="0.01" placeholder="leave blank to keep existing"></label><label>Description (optional) <textarea name="description" rows="4" maxlength="1000" placeholder="leave blank to keep existing"></textarea></label><label>Type (optional) <select name="type"><option value="">-- keep existing --</option><option value="Toys">Toys</option><option value="Food">Food</option><option value="Treats">Treats</option><option value="Accessories">Accessories</option><option value="Care">Care</option></select></label><label>Replace Images (optional, replaces all) <input name="images" type="file" accept=".jpg,.jpeg,.png" multiple></label><button type="submit">Update</button></form>
       <h2>Delete Product</h2><form method="post" action="/admin/products/delete"><label>Product <select name="pid" required>${products.map((p) => `<option value="${p.pid}">${p.pid} - ${p.name}</option>`).join('')}</select></label><button type="submit">Delete</button></form>
       </section></div><p><a href="/">Back to Store</a></p></main>
       <footer class="site-footer" role="contentinfo"><div class="container"><div class="footer-bottom"><p>&copy; 2026 AniMall (IERG4210 Assignment).</p></div></div></footer>
@@ -175,31 +203,72 @@ app.post('/admin/categories/delete', async (req, res) => {
   }
 });
 
-app.post('/admin/products', upload.single('image'), async (req, res) => {
+app.post('/admin/products', upload.array('images', 8), async (req, res) => {
   const catid = Number.parseInt(req.body.catid, 10);
   const name = sanitizeName(req.body.name);
   const price = sanitizePrice(req.body.price);
   const description = String(req.body.description || '').trim().slice(0, 1000);
-  if (!Number.isInteger(catid) || !name || price === null) return res.redirect('/admin?msg=Invalid product input');
+  const type = sanitizeType(req.body.type);
+  if (!Number.isInteger(catid) || !name || price === null || !type) return res.redirect('/admin?msg=Invalid product input');
   try {
-    const result = await runAsync('INSERT INTO products (catid, name, price, description) VALUES (?, ?, ?, ?)', [catid, name, price, description]);
-    if (req.file) await saveProductImages(result.lastID, req.file.buffer);
+    const result = await runAsync('INSERT INTO products (catid, name, price, description, type) VALUES (?, ?, ?, ?, ?)', [catid, name, price, description, type]);
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        await saveProductImage(result.lastID, req.files[i].buffer, i);
+      }
+    }
     res.redirect('/admin?msg=Product created');
   } catch {
     res.redirect('/admin?msg=Failed to create product');
   }
 });
 
-app.post('/admin/products/update', upload.single('image'), async (req, res) => {
+app.post('/admin/products/update', upload.array('images', 8), async (req, res) => {
   const pid = Number.parseInt(req.body.pid, 10);
-  const catid = Number.parseInt(req.body.catid, 10);
-  const name = sanitizeName(req.body.name);
-  const price = sanitizePrice(req.body.price);
-  const description = String(req.body.description || '').trim().slice(0, 1000);
-  if (!Number.isInteger(pid) || !Number.isInteger(catid) || !name || price === null) return res.redirect('/admin?msg=Invalid product update input');
+  if (!Number.isInteger(pid)) return res.redirect('/admin?msg=Invalid product update input');
+
+  const fields = [];
+  const values = [];
+
+  if (req.body.catid) {
+    const catid = Number.parseInt(req.body.catid, 10);
+    if (!Number.isInteger(catid)) return res.redirect('/admin?msg=Invalid category');
+    fields.push('catid = ?'); values.push(catid);
+  }
+  if (req.body.name && req.body.name.trim()) {
+    const name = sanitizeName(req.body.name);
+    if (!name) return res.redirect('/admin?msg=Invalid product name');
+    fields.push('name = ?'); values.push(name);
+  }
+  if (req.body.price !== undefined && req.body.price !== '') {
+    const price = sanitizePrice(req.body.price);
+    if (price === null) return res.redirect('/admin?msg=Invalid product price');
+    fields.push('price = ?'); values.push(price);
+  }
+  if (req.body.description !== undefined && req.body.description.trim() !== '') {
+    fields.push('description = ?'); values.push(String(req.body.description).trim().slice(0, 1000));
+  }
+  if (req.body.type) {
+    const type = sanitizeType(req.body.type);
+    if (!type) return res.redirect('/admin?msg=Invalid product type');
+    fields.push('type = ?'); values.push(type);
+  }
+
+  if (fields.length === 0 && !(req.files && req.files.length > 0)) {
+    return res.redirect('/admin?msg=No update fields provided');
+  }
+
   try {
-    await runAsync('UPDATE products SET catid = ?, name = ?, price = ?, description = ? WHERE pid = ?', [catid, name, price, description, pid]);
-    if (req.file) await saveProductImages(pid, req.file.buffer);
+    if (fields.length > 0) {
+      values.push(pid);
+      await runAsync(`UPDATE products SET ${fields.join(', ')} WHERE pid = ?`, values);
+    }
+    if (req.files && req.files.length > 0) {
+      await runAsync('DELETE FROM product_images WHERE pid = ?', [pid]);
+      for (let i = 0; i < req.files.length; i++) {
+        await saveProductImage(pid, req.files[i].buffer, i);
+      }
+    }
     res.redirect('/admin?msg=Product updated');
   } catch {
     res.redirect('/admin?msg=Failed to update product');

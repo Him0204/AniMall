@@ -1049,18 +1049,20 @@ a {
 
 .product-image {
   width: 100%;
-  height: 200px;
+  height: 220px;
   background: #f0f2f5;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .product-image img {
   width: 100%;
-  height: 100%;
+  height: 220px;
   object-fit: cover;
+  display: block;
 }
 
 .product-image-link {
@@ -1270,7 +1272,7 @@ a {
 
 .product-main-media {
   width: 100%;
-  aspect-ratio: 1;
+  height: 420px;
   background: #f0f2f5;
   border-radius: 16px;
   border: 2px solid #e5e7eb;
@@ -1297,19 +1299,24 @@ a {
 #g1:checked ~ .product-main-media .m1,
 #g2:checked ~ .product-main-media .m2,
 #g3:checked ~ .product-main-media .m3,
-#g4:checked ~ .product-main-media .m4 {
+#g4:checked ~ .product-main-media .m4,
+#g5:checked ~ .product-main-media .m5,
+#g6:checked ~ .product-main-media .m6,
+#g7:checked ~ .product-main-media .m7,
+#g8:checked ~ .product-main-media .m8 {
   display: grid;
 }
 
 .product-thumbnails {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
 .product-thumbnail {
-  width: 100%;
-  aspect-ratio: 1;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
   background: #f0f2f5;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
@@ -1317,6 +1324,7 @@ a {
   display: grid;
   place-items: center;
   color: #1a3a52;
+  overflow: hidden;
   transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
 
@@ -1327,16 +1335,21 @@ a {
 }
 
 .product-thumbnail img {
-  width: 100%;
-  height: 100%;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
   border-radius: 10px;
+  display: block;
 }
 
 #g1:checked ~ .product-thumbnails label[for="g1"],
 #g2:checked ~ .product-thumbnails label[for="g2"],
 #g3:checked ~ .product-thumbnails label[for="g3"],
-#g4:checked ~ .product-thumbnails label[for="g4"] {
+#g4:checked ~ .product-thumbnails label[for="g4"],
+#g5:checked ~ .product-thumbnails label[for="g5"],
+#g6:checked ~ .product-thumbnails label[for="g6"],
+#g7:checked ~ .product-thumbnails label[for="g7"],
+#g8:checked ~ .product-thumbnails label[for="g8"] {
   border-color: #ff8c42;
   background: #fff8f3;
 }
@@ -1369,6 +1382,7 @@ a {
   color: #4a5568;
   line-height: 1.8;
   margin-bottom: 1.25rem;
+  white-space: pre-wrap;
 }
 
 .product-features {
