@@ -87,7 +87,6 @@ async function saveProductImage(pid, fileBuffer, sortOrder) {
     'INSERT INTO product_images (pid, sort_order, image_large, image_thumb) VALUES (?, ?, ?, ?)',
     [pid, sortOrder, largeRel, thumbRel]
   );
-  // Keep products table in sync with first image for grid listings
   if (sortOrder === 0) {
     await runAsync('UPDATE products SET image_large = ?, image_thumb = ? WHERE pid = ?', [largeRel, thumbRel, pid]);
   }
