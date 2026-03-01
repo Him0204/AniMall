@@ -76,6 +76,10 @@
 
       if (galleryEl) galleryEl.innerHTML = buildGallery(galleryImages, product.name);
 
+      /* Phase 3 – wire Add to Cart button with pid */
+      const addBtn = document.querySelector('.product-add-btn');
+      if (addBtn) addBtn.dataset.pid = String(product.pid);
+
       breadcrumbs.innerHTML = `<a href="index.html">Home</a><span class="sep">›</span><a href="index.html?catid=${product.catid}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
       detailSection.hidden = false;
     } catch {

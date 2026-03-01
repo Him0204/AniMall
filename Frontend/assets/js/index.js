@@ -42,7 +42,7 @@
             ${typeTag}
           </div>
           <div class="product-price">HK$${Number(product.price).toFixed(2)}</div>
-          <button class="product-add-btn" type="button" aria-label="Add ${escapeHtml(product.name)} to cart">Add to Cart</button>
+          <button class="product-add-btn" type="button" data-pid="${product.pid}" aria-label="Add ${escapeHtml(product.name)} to cart">Add to Cart</button>
         </div>
       </article>`;
   }

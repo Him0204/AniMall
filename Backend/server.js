@@ -132,7 +132,9 @@ app.get('/api/product/:pid', async (req, res) => {
   if (!Number.isInteger(pid) || pid < 1) return res.status(400).json({ error: 'Invalid product.' });
   try {
     const row = await getAsync(
-      `SELECT p.pid, p.catid, p.name, p.price, p.description, p.type, p.image_large, c.name AS category_name
+      `SELECT p.pid, p.catid, p.name, p.price, p.description, p.type, p.image_large,
+              (SELECT pi.image_thumb FROM product_images pi WHERE pi.pid = p.pid ORDER BY pi.sort_order LIMIT 1) AS image_thumb,
+              c.name AS category_name
        FROM products p JOIN categories c ON c.catid = p.catid WHERE p.pid = ?`,
       [pid]
     );
