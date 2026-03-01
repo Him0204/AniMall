@@ -1,8 +1,6 @@
-.github/*
-
-Phase1_2A/- ref/*
-
-Phase2B_3/node_modules/*
-Phase2B_3/.env
-Phase2B_3/uploads/
-Phase2B_3/src/db/*.db
+Backend/node_modules/
+Backend/db/*.sqlite
+Frontend/assets/uploads/
+Frontend/Phase1 Ref/
+Backend/.env
+.github/
