@@ -33,7 +33,7 @@
       descriptionEl.textContent = product.description || 'No description provided.';
       imageEl.src = product.image_large || 'assets/img/img001.webp';
       imageEl.alt = product.name;
-      breadcrumbs.innerHTML = `<a href="/index.html">Home</a><span class="sep">›</span><a href="/index.html?catid=${product.catid}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
+      breadcrumbs.innerHTML = `<a href="index.html">Home</a><span class="sep">›</span><a href="category.html?catid=${product.catid}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
       detailSection.hidden = false;
     } catch (err) {
       errorBox.hidden = false;
