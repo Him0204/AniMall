@@ -1676,3 +1676,94 @@ a {
     padding-right: 1rem;
   }
 }
+
+.category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.category-pill {
+  display: inline-block;
+  text-decoration: none;
+  border: 1px solid #1b5e20;
+  color: #1b5e20;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+}
+
+.category-pill.is-active {
+  background: #1b5e20;
+  color: #fff;
+}
+
+.error-text {
+  color: #c62828;
+  margin-bottom: 1rem;
+}
+
+.admin-page {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.admin-card {
+  border: 1px solid #d8d8d8;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-card form {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.admin-card input,
+.admin-card textarea,
+.admin-card select,
+.admin-card button {
+  width: 100%;
+  padding: 0.45rem;
+}
+
+.admin-message {
+  padding: 0.7rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.admin-hint {
+  color: #555;
+}
+
+.cart-empty {
+  margin: 0.25rem 0 0.75rem;
+  color: #666;
+}
+
+.cart-remove-btn {
+  margin-top: 0.55rem;
+  border: 1px solid #d43f3a;
+  background: #fff;
+  color: #d43f3a;
+  border-radius: 6px;
+  padding: 0.25rem 0.55rem;
+  cursor: pointer;
+}
+
+.cart-remove-btn:hover {
+  background: #d43f3a;
+  color: #fff;
+}
