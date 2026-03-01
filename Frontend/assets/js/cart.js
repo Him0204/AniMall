@@ -27,7 +27,7 @@ const Cart = (() => {
     if (!badge) return;
     badge.textContent = total;
     badge.setAttribute('aria-label', `${total} item${total !== 1 ? 's' : ''} in cart`);
-    badge.style.display = total > 0 ? '' : 'none';
+    badge.classList.toggle('cart-count--active', total > 0);
   }
 
   /* ---- public API ---- */
