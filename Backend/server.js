@@ -1,7 +1,11 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 const express = require('express');
+const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 const helmet = require('helmet');
 const multer = require('multer');
 const sharp = require('sharp');
@@ -9,17 +13,70 @@ const sqlite3 = require('sqlite3').verbose();
 
 const PORT = Number(process.env.PORT || 80);
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'db', 'animall.sqlite');
+const SESSION_STORE_PATH = path.join(__dirname, 'db', 'sessions.sqlite');
 const UPLOAD_DIR = path.resolve(__dirname, process.env.UPLOAD_DIR || '../Frontend/assets/uploads');
 const FRONTEND_DIR = path.resolve(__dirname, '../Frontend');
+const SESSION_SECRET = process.env.SESSION_SECRET;
+const SESSION_COOKIE_NAME = 'animall.sid';
+const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 48; // 48 hours < 3 days
+const COOKIE_SECURE = process.env.COOKIE_SECURE !== 'false';
 const MAX_NAME_LENGTH = 120;
 
+if (!SESSION_SECRET) {
+  throw new Error('Missing SESSION_SECRET environment variable.');
+}
+
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+fs.mkdirSync(path.dirname(SESSION_STORE_PATH), { recursive: true });
 
 const app = express();
 app.disable('x-powered-by');
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      fontSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  referrerPolicy: { policy: 'no-referrer' },
+  frameguard: { action: 'deny' }
+}));
+
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
+
+app.use(session({
+  name: SESSION_COOKIE_NAME,
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  store: new SQLiteStore({
+    dir: path.dirname(SESSION_STORE_PATH),
+    db: path.basename(SESSION_STORE_PATH),
+    table: 'sessions'
+  }),
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: COOKIE_SECURE,
+    maxAge: SESSION_MAX_AGE_MS
+  }
+}));
+
+app.use((req, res, next) => {
+  req.user = req.session ? req.session.user || null : null;
+  next();
+});
+
 app.use(express.static(FRONTEND_DIR, { index: 'index.html' }));
 
 const db = new sqlite3.Database(DB_PATH);
@@ -61,6 +118,78 @@ function sanitizeName(name) {
 }
 
 const VALID_TYPES = new Set(['Toys', 'Food', 'Treats', 'Accessories', 'Care']);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 10;
+const MAX_PASSWORD_LENGTH = 64;
+// Require letters and digits; allow only safe characters; disallow quotes/whitespace to prevent SQL-looking inputs.
+const PASSWORD_COMPLEXITY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+=-]{10,64}$/;
+
+function isApiRequest(req) {
+  return req.path.startsWith('/api');
+}
+
+function sendUnauthorized(res) {
+  return res.status(401).json({ error: 'Authentication required.' });
+}
+
+function sendForbidden(res, message = 'Forbidden') {
+  return res.status(403).json({ error: message });
+}
+
+function requireAuth(req, res, next) {
+  if (req.session && req.session.user) return next();
+  if (isApiRequest(req)) return sendUnauthorized(res);
+  return res.redirect('/login.html');
+}
+
+function requireAdmin(req, res, next) {
+  if (req.session && req.session.user && req.session.user.is_admin) return next();
+  if (isApiRequest(req)) return sendForbidden(res, 'Admin access required.');
+  return res.redirect('/login.html');
+}
+
+function ensureCsrfToken(req, res, next) {
+  if (!req.session) return sendForbidden(res, 'Session unavailable.');
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+  }
+  res.locals.csrfToken = req.session.csrfToken;
+  next();
+}
+
+function requireCsrf(req, res, next) {
+  if (!req.session || !req.session.csrfToken) {
+    return sendForbidden(res, 'Missing CSRF token.');
+  }
+  const token = req.get('x-csrf-token') || (req.body && req.body.csrfToken);
+  if (token && token === req.session.csrfToken) return next();
+  if (isApiRequest(req)) return sendForbidden(res, 'Invalid CSRF token.');
+  return res.redirect('/login.html');
+}
+
+function sanitizeEmail(email) {
+  const value = String(email || '').trim().toLowerCase();
+  return EMAIL_PATTERN.test(value) ? value : null;
+}
+
+function validatePassword(password) {
+  const value = String(password || '');
+  if (value.length < MIN_PASSWORD_LENGTH || value.length > MAX_PASSWORD_LENGTH) return null;
+  return PASSWORD_COMPLEXITY.test(value) ? value : null;
+}
+
+async function findUserByEmail(email) {
+  return getAsync('SELECT userid, email, password_hash, name, is_admin FROM users WHERE email = ?', [email]);
+}
+
+function pickUserSession(userRow) {
+  return {
+    userid: userRow.userid,
+    email: userRow.email,
+    name: userRow.name,
+    is_admin: Boolean(userRow.is_admin)
+  };
+}
 
 function sanitizePrice(price) {
   const parsed = Number(price);
@@ -91,6 +220,109 @@ async function saveProductImage(pid, fileBuffer, sortOrder) {
     await runAsync('UPDATE products SET image_large = ?, image_thumb = ? WHERE pid = ?', [largeRel, thumbRel, pid]);
   }
 }
+
+app.get('/api/csrf-token', ensureCsrfToken, (req, res) => {
+  res.json({ csrfToken: req.session.csrfToken });
+});
+
+app.get('/api/auth/me', ensureCsrfToken, (req, res) => {
+  const user = req.session && req.session.user ? req.session.user : null;
+  res.json({ authenticated: Boolean(user), user, csrfToken: req.session.csrfToken });
+});
+
+app.post('/api/auth/register', ensureCsrfToken, requireCsrf, async (req, res) => {
+  const email = sanitizeEmail(req.body.email);
+  const password = validatePassword(req.body.password);
+  const confirm = String(req.body.confirmPassword || '');
+  const name = String(req.body.name || '').trim().slice(0, MAX_NAME_LENGTH) || null;
+
+  if (!email || !password || confirm !== req.body.password) {
+    return res.status(400).json({ error: 'Invalid registration input.' });
+  }
+
+  try {
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      return res.status(409).json({ error: 'Email already registered.' });
+    }
+
+    const now = Date.now();
+    const passwordHash = await bcrypt.hash(password, 12);
+    await runAsync(
+      'INSERT INTO users (email, password_hash, name, is_admin, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?)',
+      [email, passwordHash, name, now, now]
+    );
+
+    res.json({ success: true, message: 'Registration successful.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to register at this time.' });
+  }
+});
+
+app.post('/api/auth/login', ensureCsrfToken, requireCsrf, async (req, res) => {
+  const email = sanitizeEmail(req.body.email);
+  const password = String(req.body.password || '');
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Invalid login input.' });
+  }
+
+  try {
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({ error: 'Email or password is incorrect.' });
+    }
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) {
+      return res.status(401).json({ error: 'Email or password is incorrect.' });
+    }
+
+    req.session.regenerate((err) => {
+      if (err) return res.status(500).json({ error: 'Unable to start session.' });
+      req.session.user = pickUserSession(user);
+      req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+      res.json({ success: true, user: req.session.user, csrfToken: req.session.csrfToken });
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to login at this time.' });
+  }
+});
+
+app.post('/api/auth/logout', requireAuth, ensureCsrfToken, requireCsrf, (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie(SESSION_COOKIE_NAME);
+    res.json({ success: true });
+  });
+});
+
+app.post('/api/auth/change-password', requireAuth, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const currentPassword = String(req.body.currentPassword || '');
+  const newPassword = validatePassword(req.body.newPassword);
+  const confirmPassword = String(req.body.confirmPassword || '');
+
+  if (!newPassword || newPassword !== confirmPassword) {
+    return res.status(400).json({ error: 'Invalid password change input.' });
+  }
+
+  try {
+    const user = await getAsync('SELECT userid, password_hash FROM users WHERE userid = ?', [req.session.user.userid]);
+    if (!user) return res.status(401).json({ error: 'Session is invalid.' });
+
+    const match = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!match) return res.status(401).json({ error: 'Current password is incorrect.' });
+
+    const newHash = await bcrypt.hash(newPassword, 12);
+    const now = Date.now();
+    await runAsync('UPDATE users SET password_hash = ?, updated_at = ? WHERE userid = ?', [newHash, now, user.userid]);
+
+    req.session.destroy(() => {
+      res.clearCookie(SESSION_COOKIE_NAME);
+      res.json({ success: true, message: 'Password changed. Please log in again.' });
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to change password at this time.' });
+  }
+});
 
 app.get('/api/categories', async (req, res) => {
   try {
@@ -144,76 +376,71 @@ app.get('/api/product/:pid', async (req, res) => {
   }
 });
 
-app.get('/admin', async (req, res) => {
+app.get('/api/admin/options', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [categories, products] = await Promise.all([
       allAsync('SELECT catid, name FROM categories ORDER BY catid'),
       allAsync('SELECT pid, name FROM products ORDER BY pid')
     ]);
-    const message = req.query.msg ? `<p class="admin-message">${String(req.query.msg).replace(/[<>&"']/g, '')}</p>` : '';
-
-    res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - AniMall</title><link rel="stylesheet" href="/assets/css/style.css"></head>
-      <body><div class="site-wrapper">
-      <header class="site-header" role="banner"><div class="container"><div class="header-main"><div class="header-brand"><a class="logo" href="/" aria-label="AniMall home"><img class="logo-icon" src="/assets/img/icon-paw.png" alt="" aria-hidden="true"><span class="logo-text">AniMall</span></a></div><nav class="header-nav desktop-nav" aria-label="Main navigation"><ul class="primary-nav"><li><a href="/">Home</a></li><li><a href="/admin">Admin</a></li></ul></nav></div></div></header>
-      <main class="admin-page"><h1>Admin Panel</h1>${message}<div class="admin-grid">
-      <section class="admin-card">
-        <div class="admin-section"><h2>Create Category</h2><form method="post" action="/admin/categories"><label>Name <input name="name" maxlength="120" required placeholder="Category name"></label><button type="submit" class="btn-primary">Create</button></form></div>
-        <div class="admin-section"><h2>Update Category</h2><form method="post" action="/admin/categories/update"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>New Name <input name="name" maxlength="120" required placeholder="New category name"></label><button type="submit" class="btn-primary">Update</button></form></div>
-        <div class="admin-section"><h2>Delete Category</h2><form method="post" action="/admin/categories/delete"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><button type="submit" class="btn-danger">Delete</button></form></div>
-      </section>
-      <section class="admin-card">
-        <div class="admin-section"><h2>Create Product</h2><form method="post" action="/admin/products" enctype="multipart/form-data"><label>Category <select name="catid" required>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>Name <input name="name" maxlength="120" required placeholder="Product name"></label><label>Price <input name="price" type="number" min="0" step="0.01" required placeholder="0.00"></label><label>Description <textarea name="description" rows="3" maxlength="1000" placeholder="Product description..."></textarea></label><label>Type <select name="type" required><option value="Toys">Toys</option><option value="Food">Food</option><option value="Treats">Treats</option><option value="Accessories" selected>Accessories</option><option value="Care">Care</option></select></label><label>Images (JPG/PNG, up to 8) <input name="images" type="file" accept=".jpg,.jpeg,.png" multiple></label><button type="submit" class="btn-primary">Create Product</button></form></div>
-        <div class="admin-section"><h2>Update Product</h2><form method="post" action="/admin/products/update" enctype="multipart/form-data"><label>Product <select name="pid" required>${products.map((p) => `<option value="${p.pid}">${p.pid} - ${p.name}</option>`).join('')}</select></label><label>Category (optional) <select name="catid"><option value="">— keep existing —</option>${categories.map((c) => `<option value="${c.catid}">${c.name}</option>`).join('')}</select></label><label>Name (optional) <input name="name" maxlength="120" placeholder="leave blank to keep existing"></label><label>Price (optional) <input name="price" type="number" min="0" step="0.01" placeholder="leave blank to keep existing"></label><label>Description (optional) <textarea name="description" rows="3" maxlength="1000" placeholder="leave blank to keep existing"></textarea></label><label>Type (optional) <select name="type"><option value="">— keep existing —</option><option value="Toys">Toys</option><option value="Food">Food</option><option value="Treats">Treats</option><option value="Accessories">Accessories</option><option value="Care">Care</option></select></label><label>Replace Images (optional) <input name="images" type="file" accept=".jpg,.jpeg,.png" multiple></label><button type="submit" class="btn-primary">Update Product</button></form></div>
-        <div class="admin-section"><h2>Delete Product</h2><form method="post" action="/admin/products/delete"><label>Product <select name="pid" required>${products.map((p) => `<option value="${p.pid}">${p.pid} - ${p.name}</option>`).join('')}</select></label><button type="submit" class="btn-danger">Delete</button></form></div>
-      </section></div><a class="admin-back-link" href="/">&#8592; Back to Store</a></main>
-      <footer class="site-footer" role="contentinfo"><div class="container"><div class="footer-bottom"><p>&copy; 2026 AniMall (IERG4210 Assignment).</p></div></div></footer>
-      </div></body></html>`);
+    res.json({ categories, products, validTypes: Array.from(VALID_TYPES) });
   } catch {
-    res.status(500).send('Admin panel unavailable.');
+    res.status(500).json({ success: false, message: 'Failed to load admin options.' });
   }
 });
 
-app.post('/admin/categories', async (req, res) => {
+app.get('/admin', async (req, res) => {
+  const queryStart = req.originalUrl.indexOf('?');
+  const query = queryStart >= 0 ? req.originalUrl.slice(queryStart) : '';
+  res.redirect(`/admin.html${query}`);
+});
+
+app.post('/api/admin/categories', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
   const name = sanitizeName(req.body.name);
-  if (!name) return res.redirect('/admin?msg=Invalid category name');
+  if (!name) return res.status(400).json({ success: false, message: 'Invalid category name' });
   try {
-    await runAsync('INSERT INTO categories (name) VALUES (?)', [name]);
-    res.redirect('/admin?msg=Category created');
+    const result = await runAsync('INSERT INTO categories (name) VALUES (?)', [name]);
+    res.json({ success: true, message: 'Category created', data: { catid: result.lastID } });
   } catch {
-    res.redirect('/admin?msg=Failed to create category');
+    res.status(500).json({ success: false, message: 'Failed to create category' });
   }
 });
 
-app.post('/admin/categories/update', async (req, res) => {
-  const catid = Number.parseInt(req.body.catid, 10);
+app.put('/api/admin/categories/:catid', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const catid = Number.parseInt(req.params.catid, 10);
   const name = sanitizeName(req.body.name);
-  if (!Number.isInteger(catid) || !name) return res.redirect('/admin?msg=Invalid category update input');
+  if (!Number.isInteger(catid) || !name) {
+    return res.status(400).json({ success: false, message: 'Invalid category update input' });
+  }
   try {
-    await runAsync('UPDATE categories SET name = ? WHERE catid = ?', [name, catid]);
-    res.redirect('/admin?msg=Category updated');
+    const result = await runAsync('UPDATE categories SET name = ? WHERE catid = ?', [name, catid]);
+    if (!result.changes) return res.status(404).json({ success: false, message: 'Category not found' });
+    res.json({ success: true, message: 'Category updated' });
   } catch {
-    res.redirect('/admin?msg=Failed to update category');
+    res.status(500).json({ success: false, message: 'Failed to update category' });
   }
 });
 
-app.post('/admin/categories/delete', async (req, res) => {
-  const catid = Number.parseInt(req.body.catid, 10);
-  if (!Number.isInteger(catid)) return res.redirect('/admin?msg=Invalid category');
+app.delete('/api/admin/categories/:catid', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const catid = Number.parseInt(req.params.catid, 10);
+  if (!Number.isInteger(catid)) return res.status(400).json({ success: false, message: 'Invalid category' });
   try {
-    await runAsync('DELETE FROM categories WHERE catid = ?', [catid]);
-    res.redirect('/admin?msg=Category deleted');
+    const result = await runAsync('DELETE FROM categories WHERE catid = ?', [catid]);
+    if (!result.changes) return res.status(404).json({ success: false, message: 'Category not found' });
+    res.json({ success: true, message: 'Category deleted' });
   } catch {
-    res.redirect('/admin?msg=Failed to delete category');
+    res.status(500).json({ success: false, message: 'Failed to delete category' });
   }
 });
 
-app.post('/admin/products', upload.array('images', 8), async (req, res) => {
+app.post('/api/admin/products', requireAuth, requireAdmin, ensureCsrfToken, upload.array('images', 8), requireCsrf, async (req, res) => {
   const catid = Number.parseInt(req.body.catid, 10);
   const name = sanitizeName(req.body.name);
   const price = sanitizePrice(req.body.price);
   const description = String(req.body.description || '').trim().slice(0, 1000);
   const type = sanitizeType(req.body.type);
-  if (!Number.isInteger(catid) || !name || price === null || !type) return res.redirect('/admin?msg=Invalid product input');
+  if (!Number.isInteger(catid) || !name || price === null || !type) {
+    return res.status(400).json({ success: false, message: 'Invalid product input' });
+  }
   try {
     const result = await runAsync('INSERT INTO products (catid, name, price, description, type) VALUES (?, ?, ?, ?, ?)', [catid, name, price, description, type]);
     if (req.files && req.files.length > 0) {
@@ -221,32 +448,32 @@ app.post('/admin/products', upload.array('images', 8), async (req, res) => {
         await saveProductImage(result.lastID, req.files[i].buffer, i);
       }
     }
-    res.redirect('/admin?msg=Product created');
+    res.json({ success: true, message: 'Product created', data: { pid: result.lastID } });
   } catch {
-    res.redirect('/admin?msg=Failed to create product');
+    res.status(500).json({ success: false, message: 'Failed to create product' });
   }
 });
 
-app.post('/admin/products/update', upload.array('images', 8), async (req, res) => {
-  const pid = Number.parseInt(req.body.pid, 10);
-  if (!Number.isInteger(pid)) return res.redirect('/admin?msg=Invalid product update input');
+app.put('/api/admin/products/:pid', requireAuth, requireAdmin, ensureCsrfToken, upload.array('images', 8), requireCsrf, async (req, res) => {
+  const pid = Number.parseInt(req.params.pid, 10);
+  if (!Number.isInteger(pid)) return res.status(400).json({ success: false, message: 'Invalid product update input' });
 
   const fields = [];
   const values = [];
 
   if (req.body.catid) {
     const catid = Number.parseInt(req.body.catid, 10);
-    if (!Number.isInteger(catid)) return res.redirect('/admin?msg=Invalid category');
+    if (!Number.isInteger(catid)) return res.status(400).json({ success: false, message: 'Invalid category' });
     fields.push('catid = ?'); values.push(catid);
   }
   if (req.body.name && req.body.name.trim()) {
     const name = sanitizeName(req.body.name);
-    if (!name) return res.redirect('/admin?msg=Invalid product name');
+    if (!name) return res.status(400).json({ success: false, message: 'Invalid product name' });
     fields.push('name = ?'); values.push(name);
   }
   if (req.body.price !== undefined && req.body.price !== '') {
     const price = sanitizePrice(req.body.price);
-    if (price === null) return res.redirect('/admin?msg=Invalid product price');
+    if (price === null) return res.status(400).json({ success: false, message: 'Invalid product price' });
     fields.push('price = ?'); values.push(price);
   }
   if (req.body.description !== undefined && req.body.description.trim() !== '') {
@@ -254,12 +481,141 @@ app.post('/admin/products/update', upload.array('images', 8), async (req, res) =
   }
   if (req.body.type) {
     const type = sanitizeType(req.body.type);
-    if (!type) return res.redirect('/admin?msg=Invalid product type');
+    if (!type) return res.status(400).json({ success: false, message: 'Invalid product type' });
     fields.push('type = ?'); values.push(type);
   }
 
   if (fields.length === 0 && !(req.files && req.files.length > 0)) {
-    return res.redirect('/admin?msg=No update fields provided');
+    return res.status(400).json({ success: false, message: 'No update fields provided' });
+  }
+
+  try {
+    const existing = await getAsync('SELECT pid FROM products WHERE pid = ?', [pid]);
+    if (!existing) return res.status(404).json({ success: false, message: 'Product not found' });
+
+    if (fields.length > 0) {
+      values.push(pid);
+      await runAsync(`UPDATE products SET ${fields.join(', ')} WHERE pid = ?`, values);
+    }
+    if (req.files && req.files.length > 0) {
+      await runAsync('DELETE FROM product_images WHERE pid = ?', [pid]);
+      for (let i = 0; i < req.files.length; i++) {
+        await saveProductImage(pid, req.files[i].buffer, i);
+      }
+    }
+    res.json({ success: true, message: 'Product updated' });
+  } catch {
+    res.status(500).json({ success: false, message: 'Failed to update product' });
+  }
+});
+
+app.delete('/api/admin/products/:pid', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const pid = Number.parseInt(req.params.pid, 10);
+  if (!Number.isInteger(pid)) return res.status(400).json({ success: false, message: 'Invalid product' });
+  try {
+    const images = await allAsync('SELECT image_large, image_thumb FROM product_images WHERE pid = ?', [pid]);
+    const result = await runAsync('DELETE FROM products WHERE pid = ?', [pid]);
+    if (!result.changes) return res.status(404).json({ success: false, message: 'Product not found' });
+    images.forEach(({ image_large, image_thumb }) => {
+      [image_large, image_thumb].forEach((rel) => {
+        if (!rel) return;
+        const abs = path.join(FRONTEND_DIR, rel);
+        if (fs.existsSync(abs)) fs.unlinkSync(abs);
+      });
+    });
+    res.json({ success: true, message: 'Product deleted' });
+  } catch {
+    res.status(500).json({ success: false, message: 'Failed to delete product' });
+  }
+});
+
+app.post('/admin/categories', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const name = sanitizeName(req.body.name);
+  if (!name) return res.redirect('/admin.html?msg=Invalid category name');
+  try {
+    await runAsync('INSERT INTO categories (name) VALUES (?)', [name]);
+    res.redirect('/admin.html?msg=Category created');
+  } catch {
+    res.redirect('/admin.html?msg=Failed to create category');
+  }
+});
+
+app.post('/admin/categories/update', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const catid = Number.parseInt(req.body.catid, 10);
+  const name = sanitizeName(req.body.name);
+  if (!Number.isInteger(catid) || !name) return res.redirect('/admin.html?msg=Invalid category update input');
+  try {
+    await runAsync('UPDATE categories SET name = ? WHERE catid = ?', [name, catid]);
+    res.redirect('/admin.html?msg=Category updated');
+  } catch {
+    res.redirect('/admin.html?msg=Failed to update category');
+  }
+});
+
+app.post('/admin/categories/delete', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const catid = Number.parseInt(req.body.catid, 10);
+  if (!Number.isInteger(catid)) return res.redirect('/admin.html?msg=Invalid category');
+  try {
+    await runAsync('DELETE FROM categories WHERE catid = ?', [catid]);
+    res.redirect('/admin.html?msg=Category deleted');
+  } catch {
+    res.redirect('/admin.html?msg=Failed to delete category');
+  }
+});
+
+app.post('/admin/products', requireAuth, requireAdmin, ensureCsrfToken, upload.array('images', 8), requireCsrf, async (req, res) => {
+  const catid = Number.parseInt(req.body.catid, 10);
+  const name = sanitizeName(req.body.name);
+  const price = sanitizePrice(req.body.price);
+  const description = String(req.body.description || '').trim().slice(0, 1000);
+  const type = sanitizeType(req.body.type);
+  if (!Number.isInteger(catid) || !name || price === null || !type) return res.redirect('/admin.html?msg=Invalid product input');
+  try {
+    const result = await runAsync('INSERT INTO products (catid, name, price, description, type) VALUES (?, ?, ?, ?, ?)', [catid, name, price, description, type]);
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        await saveProductImage(result.lastID, req.files[i].buffer, i);
+      }
+    }
+    res.redirect('/admin.html?msg=Product created');
+  } catch {
+    res.redirect('/admin.html?msg=Failed to create product');
+  }
+});
+
+app.post('/admin/products/update', requireAuth, requireAdmin, ensureCsrfToken, upload.array('images', 8), requireCsrf, async (req, res) => {
+  const pid = Number.parseInt(req.body.pid, 10);
+  if (!Number.isInteger(pid)) return res.redirect('/admin.html?msg=Invalid product update input');
+
+  const fields = [];
+  const values = [];
+
+  if (req.body.catid) {
+    const catid = Number.parseInt(req.body.catid, 10);
+    if (!Number.isInteger(catid)) return res.redirect('/admin.html?msg=Invalid category');
+    fields.push('catid = ?'); values.push(catid);
+  }
+  if (req.body.name && req.body.name.trim()) {
+    const name = sanitizeName(req.body.name);
+    if (!name) return res.redirect('/admin.html?msg=Invalid product name');
+    fields.push('name = ?'); values.push(name);
+  }
+  if (req.body.price !== undefined && req.body.price !== '') {
+    const price = sanitizePrice(req.body.price);
+    if (price === null) return res.redirect('/admin.html?msg=Invalid product price');
+    fields.push('price = ?'); values.push(price);
+  }
+  if (req.body.description !== undefined && req.body.description.trim() !== '') {
+    fields.push('description = ?'); values.push(String(req.body.description).trim().slice(0, 1000));
+  }
+  if (req.body.type) {
+    const type = sanitizeType(req.body.type);
+    if (!type) return res.redirect('/admin.html?msg=Invalid product type');
+    fields.push('type = ?'); values.push(type);
+  }
+
+  if (fields.length === 0 && !(req.files && req.files.length > 0)) {
+    return res.redirect('/admin.html?msg=No update fields provided');
   }
 
   try {
@@ -273,15 +629,15 @@ app.post('/admin/products/update', upload.array('images', 8), async (req, res) =
         await saveProductImage(pid, req.files[i].buffer, i);
       }
     }
-    res.redirect('/admin?msg=Product updated');
+    res.redirect('/admin.html?msg=Product updated');
   } catch {
-    res.redirect('/admin?msg=Failed to update product');
+    res.redirect('/admin.html?msg=Failed to update product');
   }
 });
 
-app.post('/admin/products/delete', async (req, res) => {
+app.post('/admin/products/delete', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
   const pid = Number.parseInt(req.body.pid, 10);
-  if (!Number.isInteger(pid)) return res.redirect('/admin?msg=Invalid product');
+  if (!Number.isInteger(pid)) return res.redirect('/admin.html?msg=Invalid product');
   try {
     const images = await allAsync('SELECT image_large, image_thumb FROM product_images WHERE pid = ?', [pid]);
     await runAsync('DELETE FROM products WHERE pid = ?', [pid]);
@@ -292,14 +648,17 @@ app.post('/admin/products/delete', async (req, res) => {
         if (fs.existsSync(abs)) fs.unlinkSync(abs);
       });
     });
-    res.redirect('/admin?msg=Product deleted');
+    res.redirect('/admin.html?msg=Product deleted');
   } catch {
-    res.redirect('/admin?msg=Failed to delete product');
+    res.redirect('/admin.html?msg=Failed to delete product');
   }
 });
 
 app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError || err.message.includes('allowed')) {
+  if (err instanceof multer.MulterError || (typeof err.message === 'string' && err.message.includes('allowed'))) {
+    if (req.path.startsWith('/api/admin/')) {
+      return res.status(400).json({ success: false, message: 'Invalid upload file' });
+    }
     return res.status(400).redirect('/admin?msg=Invalid upload file');
   }
   return res.status(500).send('Internal server error.');

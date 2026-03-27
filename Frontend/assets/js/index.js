@@ -26,22 +26,23 @@
     .replaceAll("'", '&#39;');
 
   function productCard(product, catName) {
+    const safePid = encodeURIComponent(product.pid);
     const typeTag = product.type ? `<span class="tag tag-product">${escapeHtml(product.type)}</span>` : '';
     return `
       <article class="product-card">
-        <a class="product-image-link" href="product.html?pid=${product.pid}" aria-label="View ${escapeHtml(product.name)}">
+        <a class="product-image-link" href="product.html?pid=${safePid}" aria-label="View ${escapeHtml(product.name)}">
           <div class="product-image">
             <img src="${escapeHtml(product.image_thumb || 'assets/img/img001.webp')}" alt="${escapeHtml(product.name)}">
           </div>
         </a>
         <div class="product-info">
-          <a href="product.html?pid=${product.pid}" class="product-name">${escapeHtml(product.name)}</a>
+          <a href="product.html?pid=${safePid}" class="product-name">${escapeHtml(product.name)}</a>
           <div class="product-tags">
             <span class="tag tag-animal">${escapeHtml(catName)}</span>
             ${typeTag}
           </div>
           <div class="product-price">HK$${Number(product.price).toFixed(2)}</div>
-          <button class="product-add-btn" type="button" data-pid="${product.pid}" aria-label="Add ${escapeHtml(product.name)} to cart">Add to Cart</button>
+          <button class="product-add-btn" type="button" data-pid="${escapeHtml(String(product.pid))}" aria-label="Add ${escapeHtml(product.name)} to cart">Add to Cart</button>
         </div>
       </article>`;
   }

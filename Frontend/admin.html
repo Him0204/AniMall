@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <title>AniMall - Admin</title>
+</head>
+<body>
+  <div class="site-wrapper">
+    <header class="site-header" role="banner">
+      <div class="container">
+        <input type="checkbox" id="menu-toggle" class="menu-toggle-input" aria-label="Toggle menu">
+        <div class="header-main">
+          <div class="header-brand">
+            <a class="logo" href="index.html" aria-label="AniMall home">
+              <img class="logo-icon" src="assets/img/icon-paw.png" alt="" aria-hidden="true">
+              <span class="logo-text">AniMall</span>
+            </a>
+          </div>
+
+          <nav class="header-nav desktop-nav" aria-label="Main navigation">
+            <ul class="primary-nav">
+              <li><a href="index.html">Home</a></li>
+              <li class="shop-menu">
+                <a href="index.html" aria-haspopup="true">Shop</a>
+                <ul class="shop-submenu" aria-label="Shop categories">
+                  <li class="submenu-parent">
+                    <a href="index.html">Animals</a>
+                    <ul class="shop-subsubmenu">
+                      <li><a href="index.html" data-cat-name="Dogs">Dogs</a></li>
+                      <li><a href="index.html" data-cat-name="Cats">Cats</a></li>
+                      <li><a href="index.html" data-cat-name="Fish">Fish</a></li>
+                      <li><a href="index.html" data-cat-name="Birds">Birds</a></li>
+                      <li><a href="index.html" data-cat-name="Small Pets">Small Pets</a></li>
+                    </ul>
+                  </li>
+                  <li class="submenu-parent">
+                    <a href="index.html">Products</a>
+                    <ul class="shop-subsubmenu">
+                      <li><a href="index.html" data-type="Toys">Toys</a></li>
+                      <li><a href="index.html" data-type="Treats">Treats</a></li>
+                      <li><a href="index.html" data-type="Food">Food</a></li>
+                      <li><a href="index.html" data-type="Care">Care</a></li>
+                      <li><a href="index.html" data-type="Accessories">Accessories</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li><a href="index.html#about">About Us</a></li>
+              <li><a href="index.html#contact">Contact Us</a></li>
+              <li><a class="admin-link" href="admin.html" aria-current="page">Admin</a></li>
+            </ul>
+          </nav>
+
+          <div class="header-actions">
+            <button class="lang-btn" type="button" aria-label="Switch language">EN</button>
+            <span class="user-label" aria-live="polite">Guest</span>
+            <a class="login-btn" href="login.html" aria-label="Login">Login</a>
+
+            <label for="menu-toggle" class="menu-toggle-btn" aria-label="Open menu">
+              <svg class="icon menu-icon" aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+              </svg>
+              <svg class="icon close-icon" aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3 1.4 1.4z"/>
+              </svg>
+            </label>
+          </div>
+        </div>
+
+        <nav class="mobile-nav" aria-label="Mobile navigation">
+          <ul class="mobile-nav-list">
+            <li><a href="index.html">Home</a></li>
+            <li class="mobile-shop-menu">
+              <input type="checkbox" id="shop-toggle" class="shop-toggle-input" aria-label="Toggle shop categories">
+              <label for="shop-toggle" class="mobile-shop-label">Shop</label>
+              <ul class="mobile-submenu">
+                <li class="mobile-submenu-parent">
+                  <input type="checkbox" id="animal-toggle" class="subsubmenu-toggle-input" aria-label="Toggle animal categories">
+                  <label for="animal-toggle" class="mobile-subsubmenu-label">Animals</label>
+                  <ul class="mobile-subsubmenu">
+                    <li><a href="index.html" data-cat-name="Dogs">Dogs</a></li>
+                    <li><a href="index.html" data-cat-name="Cats">Cats</a></li>
+                    <li><a href="index.html" data-cat-name="Fish">Fish</a></li>
+                    <li><a href="index.html" data-cat-name="Birds">Birds</a></li>
+                    <li><a href="index.html" data-cat-name="Small Pets">Small Pets</a></li>
+                  </ul>
+                </li>
+                <li class="mobile-submenu-parent">
+                  <input type="checkbox" id="product-toggle" class="subsubmenu-toggle-input" aria-label="Toggle product categories">
+                  <label for="product-toggle" class="mobile-subsubmenu-label">Products</label>
+                  <ul class="mobile-subsubmenu">
+                    <li><a href="index.html" data-type="Toys">Toys</a></li>
+                    <li><a href="index.html" data-type="Treats">Treats</a></li>
+                    <li><a href="index.html" data-type="Food">Food</a></li>
+                    <li><a href="index.html" data-type="Care">Care</a></li>
+                    <li><a href="index.html" data-type="Accessories">Accessories</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li><a href="index.html#about">About Us</a></li>
+            <li><a href="index.html#contact">Contact Us</a></li>
+            <li><a class="admin-link" href="admin.html" aria-current="page">Admin</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main class="admin-page">
+      <h1 hidden aria-hidden="true">Admin Panel</h1>
+      <p id="admin-message" class="admin-message" hidden></p>
+      <p id="admin-error" class="error-text" hidden>Unable to load admin data right now.</p>
+
+      <div class="admin-grid" hidden aria-hidden="true">
+        <section class="admin-card">
+          <div class="admin-section">
+            <h2>Create Category</h2>
+            <form id="form-create-category">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Name
+                <input name="name" maxlength="120" required placeholder="Category name" pattern=".*\S.*">
+              </label>
+              <button type="submit" class="btn-primary">Create</button>
+            </form>
+          </div>
+
+          <div class="admin-section">
+            <h2>Update Category</h2>
+            <form id="form-update-category">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Category
+                <select name="catid" id="update-category-catid" required></select>
+              </label>
+              <label>New Name
+                <input name="name" maxlength="120" required placeholder="New category name" pattern=".*\S.*">
+              </label>
+              <button type="submit" class="btn-primary">Update</button>
+            </form>
+          </div>
+
+          <div class="admin-section">
+            <h2>Delete Category</h2>
+            <form id="form-delete-category">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Category
+                <select name="catid" id="delete-category-catid" required></select>
+              </label>
+              <button type="submit" class="btn-danger">Delete</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-section">
+            <h2>Create Product</h2>
+            <form id="form-create-product" enctype="multipart/form-data">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Category
+                <select name="catid" id="create-product-catid" required></select>
+              </label>
+              <label>Name
+                <input name="name" maxlength="120" required placeholder="Product name" pattern=".*\S.*">
+              </label>
+              <label>Price
+                <input name="price" type="number" min="0" max="999999" step="0.01" required placeholder="0.00" inputmode="decimal">
+              </label>
+              <label>Description
+                <textarea name="description" rows="3" maxlength="1000" placeholder="Product description..."></textarea>
+              </label>
+              <label>Type
+                <select name="type" id="create-product-type" required></select>
+              </label>
+              <label>Images (JPG/PNG, up to 8)
+                <input name="images" type="file" accept=".jpg,.jpeg,.png" multiple>
+              </label>
+              <button type="submit" class="btn-primary">Create Product</button>
+            </form>
+          </div>
+
+          <div class="admin-section">
+            <h2>Update Product</h2>
+            <form id="form-update-product" enctype="multipart/form-data">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Product
+                <select name="pid" id="update-product-pid" required></select>
+              </label>
+              <label>Category (optional)
+                <select name="catid" id="update-product-catid">
+                  <option value="">- keep existing -</option>
+                </select>
+              </label>
+              <label>Name (optional)
+                <input name="name" maxlength="120" placeholder="leave blank to keep existing" pattern=".*\S.*">
+              </label>
+              <label>Price (optional)
+                <input name="price" type="number" min="0" max="999999" step="0.01" placeholder="leave blank to keep existing" inputmode="decimal">
+              </label>
+              <label>Description (optional)
+                <textarea name="description" rows="3" maxlength="1000" placeholder="leave blank to keep existing"></textarea>
+              </label>
+              <label>Type (optional)
+                <select name="type" id="update-product-type">
+                  <option value="">- keep existing -</option>
+                </select>
+              </label>
+              <label>Replace Images (optional)
+                <input name="images" type="file" accept=".jpg,.jpeg,.png" multiple>
+              </label>
+              <button type="submit" class="btn-primary">Update Product</button>
+            </form>
+          </div>
+
+          <div class="admin-section">
+            <h2>Delete Product</h2>
+            <form id="form-delete-product">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Product
+                <select name="pid" id="delete-product-pid" required></select>
+              </label>
+              <button type="submit" class="btn-danger">Delete</button>
+            </form>
+          </div>
+        </section>
+      </div>
+
+      <a class="admin-back-link" href="index.html" hidden aria-hidden="true">&#8592; Back to Store</a>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container">
+        <div class="footer-bottom">
+          <p>&copy; 2026 AniMall (IERG4210 Assignment).</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="assets/js/user.js" defer></script>
+  <script src="assets/js/admin.js" defer></script>
+</body>
+</html>

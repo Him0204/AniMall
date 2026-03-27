@@ -13,6 +13,10 @@ html {
   --header-height: 5rem;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   min-height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
@@ -47,7 +51,8 @@ a {
 .site-wrapper {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 100vh;
+  flex: 1;
 }
 
 /* SVG Icon Sprite */
@@ -717,6 +722,12 @@ a {
   color: #fff;
   border: none;
   border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
   padding: 0.6rem 1.3rem;
   font-size: 1rem;
   font-weight: 700;
@@ -1944,6 +1955,26 @@ a {
   box-shadow: 0 2px 8px rgba(255, 140, 66, 0.18);
 }
 
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.9rem;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.auth-links a {
+  color: #1a3a52;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-links a:hover,
+.auth-links a:focus-visible {
+  text-decoration: underline;
+}
+
 .admin-card button:hover,
 .admin-card .btn-primary:hover {
   background: #ff7a2d;
@@ -1959,6 +1990,30 @@ a {
 .admin-card .btn-danger:hover {
   background: #c53030;
   box-shadow: 0 4px 14px rgba(229, 62, 62, 0.25);
+}
+
+/* Auth panels toggle */
+.auth-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-layout .admin-grid {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.auth-layout .auth-panel {
+  display: none;
+  width: 100%;
+  max-width: 480px;
+}
+
+.auth-layout .auth-panel.is-active {
+  display: block;
+  margin: 0 auto;
 }
 
 .admin-back-link {
