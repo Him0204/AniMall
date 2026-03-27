@@ -8,7 +8,6 @@
 
   const messageEl = document.getElementById('admin-message');
   const errorEl = document.getElementById('admin-error');
-  const logoutBtn = document.getElementById('admin-logout-btn');
 
   const forms = {
     createCategory: document.getElementById('form-create-category'),
@@ -352,13 +351,6 @@
       onDeleteProduct(event).catch((err) => showMessage(err.message, true));
     });
 
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        sendJson('/api/auth/logout', 'POST', {})
-          .then(() => { window.location.href = 'login.html'; })
-          .catch((err) => showMessage(err.message, true));
-      });
-    }
   }
 
   function applyLegacyMessageFromQuery() {

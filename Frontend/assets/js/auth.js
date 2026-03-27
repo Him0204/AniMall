@@ -4,6 +4,11 @@
   const loginForm = document.getElementById('login-form');
   const registerForm = document.getElementById('register-form');
   const passwordForm = document.getElementById('password-form');
+  const authSections = {
+    login: document.getElementById('login-section'),
+    register: document.getElementById('register-section'),
+    password: document.getElementById('password-section')
+  };
 
   let csrfToken = '';
 
@@ -27,6 +32,32 @@
     document.querySelectorAll('.csrf-token-input').forEach((input) => {
       input.value = token;
     });
+  }
+
+  function focusFirstInput(section) {
+    const firstInput = section && section.querySelector('input:not([type="hidden"])');
+    if (firstInput) {
+      firstInput.focus();
+    }
+  }
+
+  function setActiveSection(key) {
+    Object.entries(authSections).forEach(([sectionKey, sectionEl]) => {
+      if (!sectionEl) return;
+      const isTarget = sectionKey === key;
+      sectionEl.classList.toggle('is-active', isTarget);
+      if (isTarget) {
+        sectionEl.removeAttribute('hidden');
+        sectionEl.setAttribute('aria-hidden', 'false');
+      } else {
+        sectionEl.setAttribute('hidden', '');
+        sectionEl.setAttribute('aria-hidden', 'true');
+      }
+    });
+    const activeSection = authSections[key];
+    if (activeSection) {
+      focusFirstInput(activeSection);
+    }
   }
 
   async function fetchCsrfToken() {
@@ -79,10 +110,15 @@
     clearMessages();
 
     const formData = new FormData(registerForm);
+    const name = String(formData.get('name') || '').trim();
     const email = String(formData.get('email') || '').trim();
     const password = String(formData.get('password') || '');
     const confirmPassword = String(formData.get('confirmPassword') || '');
-    const name = String(formData.get('name') || '').trim();
+
+    if (!name) {
+      showMessage('Please provide your name.', true);
+      return;
+    }
 
     if (!email || password.length < 10 || password !== confirmPassword) {
       showMessage('Please provide a valid email and matching passwords (min 10 characters).', true);
@@ -149,6 +185,21 @@
       showMessage(err.message || 'Unable to start session.', true);
       return;
     }
+
+    // Section toggles
+    document.querySelectorAll('[data-auth-target]').forEach((el) => {
+      el.addEventListener('click', (event) => {
+        event.preventDefault();
+        const target = el.getAttribute('data-auth-target');
+        if (target) {
+          clearMessages();
+          setActiveSection(target);
+        }
+      });
+    });
+
+    // Default to login panel
+    setActiveSection('login');
 
     loginForm.addEventListener('submit', (event) => {
       handleLogin(event).catch((err) => showMessage(err.message, true));

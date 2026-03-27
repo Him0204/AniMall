@@ -22,9 +22,34 @@
           <nav class="header-nav desktop-nav" aria-label="Main navigation">
             <ul class="primary-nav">
               <li><a href="index.html">Home</a></li>
-              <li><a href="admin.html" aria-current="page">Admin</a></li>
+              <li class="shop-menu">
+                <a href="index.html" aria-haspopup="true">Shop</a>
+                <ul class="shop-submenu" aria-label="Shop categories">
+                  <li class="submenu-parent">
+                    <a href="index.html">Animals</a>
+                    <ul class="shop-subsubmenu">
+                      <li><a href="index.html" data-cat-name="Dogs">Dogs</a></li>
+                      <li><a href="index.html" data-cat-name="Cats">Cats</a></li>
+                      <li><a href="index.html" data-cat-name="Fish">Fish</a></li>
+                      <li><a href="index.html" data-cat-name="Birds">Birds</a></li>
+                      <li><a href="index.html" data-cat-name="Small Pets">Small Pets</a></li>
+                    </ul>
+                  </li>
+                  <li class="submenu-parent">
+                    <a href="index.html">Products</a>
+                    <ul class="shop-subsubmenu">
+                      <li><a href="index.html" data-type="Toys">Toys</a></li>
+                      <li><a href="index.html" data-type="Treats">Treats</a></li>
+                      <li><a href="index.html" data-type="Food">Food</a></li>
+                      <li><a href="index.html" data-type="Care">Care</a></li>
+                      <li><a href="index.html" data-type="Accessories">Accessories</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
               <li><a href="index.html#about">About Us</a></li>
               <li><a href="index.html#contact">Contact Us</a></li>
+              <li><a href="admin.html" aria-current="page">Admin</a></li>
             </ul>
           </nav>
 
@@ -47,9 +72,37 @@
         <nav class="mobile-nav" aria-label="Mobile navigation">
           <ul class="mobile-nav-list">
             <li><a href="index.html">Home</a></li>
-            <li><a href="admin.html" aria-current="page">Admin</a></li>
+            <li class="mobile-shop-menu">
+              <input type="checkbox" id="shop-toggle" class="shop-toggle-input" aria-label="Toggle shop categories">
+              <label for="shop-toggle" class="mobile-shop-label">Shop</label>
+              <ul class="mobile-submenu">
+                <li class="mobile-submenu-parent">
+                  <input type="checkbox" id="animal-toggle" class="subsubmenu-toggle-input" aria-label="Toggle animal categories">
+                  <label for="animal-toggle" class="mobile-subsubmenu-label">Animals</label>
+                  <ul class="mobile-subsubmenu">
+                    <li><a href="index.html" data-cat-name="Dogs">Dogs</a></li>
+                    <li><a href="index.html" data-cat-name="Cats">Cats</a></li>
+                    <li><a href="index.html" data-cat-name="Fish">Fish</a></li>
+                    <li><a href="index.html" data-cat-name="Birds">Birds</a></li>
+                    <li><a href="index.html" data-cat-name="Small Pets">Small Pets</a></li>
+                  </ul>
+                </li>
+                <li class="mobile-submenu-parent">
+                  <input type="checkbox" id="product-toggle" class="subsubmenu-toggle-input" aria-label="Toggle product categories">
+                  <label for="product-toggle" class="mobile-subsubmenu-label">Products</label>
+                  <ul class="mobile-subsubmenu">
+                    <li><a href="index.html" data-type="Toys">Toys</a></li>
+                    <li><a href="index.html" data-type="Treats">Treats</a></li>
+                    <li><a href="index.html" data-type="Food">Food</a></li>
+                    <li><a href="index.html" data-type="Care">Care</a></li>
+                    <li><a href="index.html" data-type="Accessories">Accessories</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
             <li><a href="index.html#about">About Us</a></li>
             <li><a href="index.html#contact">Contact Us</a></li>
+            <li><a href="admin.html" aria-current="page">Admin</a></li>
           </ul>
         </nav>
       </div>
@@ -59,10 +112,6 @@
       <h1>Admin Panel</h1>
       <p id="admin-message" class="admin-message" hidden></p>
       <p id="admin-error" class="error-text" hidden>Unable to load admin data right now.</p>
-
-      <div class="admin-section">
-        <button id="admin-logout-btn" class="btn-danger" type="button">Logout</button>
-      </div>
 
       <div class="admin-grid">
         <section class="admin-card">
