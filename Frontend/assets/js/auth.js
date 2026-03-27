@@ -34,6 +34,10 @@
     });
   }
 
+  function isStrongPassword(pwd) {
+    return /^(?=.*[A-Za-z])(?=.*\d).{10,}$/.test(String(pwd || ''));
+  }
+
   function focusFirstInput(section) {
     const firstInput = section && section.querySelector('input:not([type="hidden"])');
     if (firstInput) {
@@ -78,8 +82,8 @@
     const email = String(formData.get('email') || '').trim();
     const password = String(formData.get('password') || '');
 
-    if (!email || password.length < 10) {
-      showMessage('Enter a valid email and a password with at least 10 characters.', true);
+    if (!email || !isStrongPassword(password)) {
+      showMessage('Enter a valid email and a password with letters, numbers, and at least 10 characters.', true);
       return;
     }
 
@@ -120,8 +124,8 @@
       return;
     }
 
-    if (!email || password.length < 10 || password !== confirmPassword) {
-      showMessage('Please provide a valid email and matching passwords (min 10 characters).', true);
+    if (!email || !isStrongPassword(password) || password !== confirmPassword) {
+      showMessage('Please provide a valid email and matching strong passwords (letters, numbers, min 10 characters).', true);
       return;
     }
 
@@ -153,8 +157,13 @@
     const newPassword = String(formData.get('newPassword') || '');
     const confirmPassword = String(formData.get('confirmPassword') || '');
 
-    if (currentPassword.length < 10 || newPassword.length < 10 || newPassword !== confirmPassword) {
-      showMessage('Please provide current password and matching new passwords (min 10 characters).', true);
+    if (!currentPassword) {
+      showMessage('Please provide your current password.', true);
+      return;
+    }
+
+    if (!isStrongPassword(newPassword) || newPassword !== confirmPassword) {
+      showMessage('Please provide matching strong new passwords (letters, numbers, min 10 characters).', true);
       return;
     }
 

@@ -120,6 +120,7 @@ function sanitizeName(name) {
 const VALID_TYPES = new Set(['Toys', 'Food', 'Treats', 'Accessories', 'Care']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 10;
+const PASSWORD_COMPLEXITY = /^(?=.*[A-Za-z])(?=.*\d).{10,}$/;
 
 function isApiRequest(req) {
   return req.path.startsWith('/api');
@@ -171,7 +172,7 @@ function sanitizeEmail(email) {
 
 function validatePassword(password) {
   const value = String(password || '');
-  return value.length >= MIN_PASSWORD_LENGTH ? value : null;
+  return PASSWORD_COMPLEXITY.test(value) ? value : null;
 }
 
 async function findUserByEmail(email) {

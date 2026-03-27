@@ -70,11 +70,11 @@
               <label>Email
                 <input type="email" name="email" autocomplete="email" required placeholder="you@example.com">
               </label>
-              <label>Password (min 10 chars)
-                <input type="password" name="password" autocomplete="new-password" required minlength="10" placeholder="Create a strong password">
+              <label>Password (letters, numbers, min 10)
+                <input type="password" name="password" autocomplete="new-password" required minlength="10" pattern="(?=.*[A-Za-z])(?=.*\d).{10,}" placeholder="Create a strong password">
               </label>
               <label>Confirm Password
-                <input type="password" name="confirmPassword" autocomplete="new-password" required minlength="10" placeholder="Re-enter your password">
+                <input type="password" name="confirmPassword" autocomplete="new-password" required minlength="10" pattern="(?=.*[A-Za-z])(?=.*\d).{10,}" placeholder="Re-enter your password">
               </label>
               <button type="submit" class="btn-primary">Register</button>
             </form>
@@ -93,11 +93,11 @@
               <label>Current Password
                 <input type="password" name="currentPassword" autocomplete="current-password" required minlength="10" placeholder="Current password">
               </label>
-              <label>New Password (min 10 chars)
-                <input type="password" name="newPassword" autocomplete="new-password" required minlength="10" placeholder="New strong password">
+              <label>New Password (letters, numbers, min 10)
+                <input type="password" name="newPassword" autocomplete="new-password" required minlength="10" pattern="(?=.*[A-Za-z])(?=.*\d).{10,}" placeholder="New strong password">
               </label>
               <label>Confirm New Password
-                <input type="password" name="confirmPassword" autocomplete="new-password" required minlength="10" placeholder="Re-enter new password">
+                <input type="password" name="confirmPassword" autocomplete="new-password" required minlength="10" pattern="(?=.*[A-Za-z])(?=.*\d).{10,}" placeholder="Re-enter new password">
               </label>
               <button type="submit" class="btn-primary">Update Password</button>
             </form>
