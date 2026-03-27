@@ -10,6 +10,7 @@
       const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
       const payload = await res.json().catch(() => ({}));
       const user = payload.user;
+      const csrfToken = payload.csrfToken;
       if (res.ok && payload.authenticated && user) {
         userLabel.textContent = user.name || user.email || 'User';
         loginBtn.textContent = 'Logout';
@@ -17,9 +18,10 @@
         loginBtn.href = '#';
         loginBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          const headers = csrfToken ? { 'x-csrf-token': csrfToken } : {};
           fetch('/api/auth/logout', {
             method: 'POST',
-            headers: { 'x-csrf-token': payload.csrfToken || '' },
+            headers,
             credentials: 'same-origin'
           }).finally(() => {
             window.location.href = 'login.html';

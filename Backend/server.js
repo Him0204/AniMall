@@ -150,7 +150,7 @@ function requireCsrf(req, res, next) {
   if (!req.session || !req.session.csrfToken) {
     return sendForbidden(res, 'Missing CSRF token.');
   }
-  const token = req.get('x-csrf-token') || (req.body && req.body.csrfToken) || (req.query && req.query.csrfToken);
+  const token = req.get('x-csrf-token') || (req.body && req.body.csrfToken);
   if (token && token === req.session.csrfToken) return next();
   if (isApiRequest(req)) return sendForbidden(res, 'Invalid CSRF token.');
   return res.redirect('/login.html');

@@ -77,7 +77,8 @@
       const addBtn = document.querySelector('.product-add-btn');
       if (addBtn) addBtn.dataset.pid = String(product.pid);
 
-      breadcrumbs.innerHTML = `<a href="index.html">Home</a><span class="sep">›</span><a href="index.html?catid=${product.catid}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
+      const encodedCat = encodeURIComponent(product.catid);
+      breadcrumbs.innerHTML = `<a href="index.html">Home</a><span class="sep">›</span><a href="index.html?catid=${encodedCat}">${escapeHtml(product.category_name)}</a><span class="sep">›</span><span aria-current="page">${escapeHtml(product.name)}</span>`;
       detailSection.hidden = false;
     } catch {
       errorBox.hidden = false;

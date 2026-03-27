@@ -65,7 +65,7 @@
             <form id="register-form">
               <input type="hidden" name="csrfToken" class="csrf-token-input">
               <label>Name
-                <input type="text" name="name" maxlength="120" required placeholder="Your name">
+                <input type="text" name="name" maxlength="120" required placeholder="Your name" pattern=".*\S.*">
               </label>
               <label>Email
                 <input type="email" name="email" autocomplete="email" required placeholder="you@example.com">

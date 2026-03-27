@@ -195,7 +195,8 @@
     const response = await fetch(url, {
       method,
       body: formData,
-      credentials: 'same-origin'
+      credentials: 'same-origin',
+      headers: csrfToken ? { 'x-csrf-token': csrfToken } : undefined
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.success) {
