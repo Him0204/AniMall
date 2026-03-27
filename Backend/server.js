@@ -30,6 +30,7 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 fs.mkdirSync(path.dirname(SESSION_STORE_PATH), { recursive: true });
 
 const app = express();
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet({
   contentSecurityPolicy: {
