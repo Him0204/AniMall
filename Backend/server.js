@@ -5,6 +5,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const express = require('express');
 const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 const helmet = require('helmet');
 const multer = require('multer');
 const sharp = require('sharp');
@@ -12,6 +13,7 @@ const sqlite3 = require('sqlite3').verbose();
 
 const PORT = Number(process.env.PORT || 80);
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'db', 'animall.sqlite');
+const SESSION_STORE_PATH = path.join(__dirname, 'db', 'sessions.sqlite');
 const UPLOAD_DIR = path.resolve(__dirname, process.env.UPLOAD_DIR || '../Frontend/assets/uploads');
 const FRONTEND_DIR = path.resolve(__dirname, '../Frontend');
 const SESSION_SECRET = process.env.SESSION_SECRET;
@@ -25,6 +27,7 @@ if (!SESSION_SECRET) {
 }
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+fs.mkdirSync(path.dirname(SESSION_STORE_PATH), { recursive: true });
 
 const app = express();
 app.disable('x-powered-by');
@@ -56,6 +59,11 @@ app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  store: new SQLiteStore({
+    dir: path.dirname(SESSION_STORE_PATH),
+    db: path.basename(SESSION_STORE_PATH),
+    table: 'sessions'
+  }),
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
