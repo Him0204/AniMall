@@ -4,8 +4,11 @@
   const VALID_EXTS = new Set(['.jpg', '.jpeg', '.png']);
   const VALID_MIME = new Set(['image/jpeg', 'image/png']);
 
+  let csrfToken = '';
+
   const messageEl = document.getElementById('admin-message');
   const errorEl = document.getElementById('admin-error');
+  const logoutBtn = document.getElementById('admin-logout-btn');
 
   const forms = {
     createCategory: document.getElementById('form-create-category'),
@@ -49,6 +52,12 @@
     opt.value = String(value);
     opt.textContent = label;
     return opt;
+  }
+
+  function setCsrfInputs(token) {
+    document.querySelectorAll('.csrf-token-input').forEach((input) => {
+      input.value = token;
+    });
   }
 
   function resetSelect(selectEl) {
@@ -104,8 +113,20 @@
     }
   }
 
+  async function ensureSession() {
+    const response = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || !payload.authenticated || !payload.user || !payload.user.is_admin) {
+      throw new Error('You must be an admin to access this page.');
+    }
+
+    csrfToken = payload.csrfToken;
+    setCsrfInputs(csrfToken);
+  }
+
   async function loadAdminOptions() {
-    const response = await fetch('/api/admin/options');
+    const response = await fetch('/api/admin/options', { credentials: 'same-origin' });
     const payload = await response.json();
     if (!response.ok) {
       throw new Error(payload.message || 'Failed to load admin options.');
@@ -143,7 +164,8 @@
   async function sendJson(url, method, body) {
     const response = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
+      credentials: 'same-origin',
       body: JSON.stringify(body)
     });
     const payload = await response.json().catch(() => ({}));
@@ -154,9 +176,13 @@
   }
 
   async function sendForm(url, method, formData) {
+    if (csrfToken && !formData.get('csrfToken')) {
+      formData.append('csrfToken', csrfToken);
+    }
     const response = await fetch(url, {
       method,
-      body: formData
+      body: formData,
+      credentials: 'same-origin'
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.success) {
@@ -325,6 +351,14 @@
     forms.deleteProduct.addEventListener('submit', (event) => {
       onDeleteProduct(event).catch((err) => showMessage(err.message, true));
     });
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        sendJson('/api/auth/logout', 'POST', {})
+          .then(() => { window.location.href = 'login.html'; })
+          .catch((err) => showMessage(err.message, true));
+      });
+    }
   }
 
   function applyLegacyMessageFromQuery() {
@@ -341,11 +375,13 @@
     bindEvents();
     applyLegacyMessageFromQuery();
     try {
+      await ensureSession();
       await loadAdminOptions();
       setLoadError(false);
-    } catch {
+    } catch (err) {
       setLoadError(true);
-      showMessage('Failed to load admin options.', true);
+      showMessage(err.message || 'Failed to load admin options.', true);
+      return;
     }
   }
 
