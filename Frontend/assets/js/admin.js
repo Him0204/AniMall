@@ -8,6 +8,9 @@
 
   const messageEl = document.getElementById('admin-message');
   const errorEl = document.getElementById('admin-error');
+  const adminGrid = document.querySelector('.admin-grid');
+  const adminBackLink = document.querySelector('.admin-back-link');
+  const adminHeading = document.querySelector('.admin-page h1');
 
   const forms = {
     createCategory: document.getElementById('form-create-category'),
@@ -28,6 +31,17 @@
     createProductType: document.getElementById('create-product-type'),
     updateProductType: document.getElementById('update-product-type')
   };
+
+  function setAdminContentVisible(isVisible) {
+    const toggle = (el) => {
+      if (!el) return;
+      el.hidden = !isVisible;
+      el.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+    };
+    toggle(adminGrid);
+    toggle(adminBackLink);
+    toggle(adminHeading);
+  }
 
   function showMessage(message, isError = false) {
     messageEl.hidden = false;
@@ -366,11 +380,14 @@
   async function init() {
     bindEvents();
     applyLegacyMessageFromQuery();
+    setAdminContentVisible(false);
     try {
       await ensureSession();
       await loadAdminOptions();
+      setAdminContentVisible(true);
       setLoadError(false);
     } catch (err) {
+      setAdminContentVisible(false);
       setLoadError(true);
       showMessage(err.message || 'Failed to load admin options.', true);
       return;

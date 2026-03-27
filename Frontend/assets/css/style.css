@@ -13,6 +13,10 @@ html {
   --header-height: 5rem;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   min-height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;

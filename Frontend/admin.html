@@ -109,11 +109,11 @@
     </header>
 
     <main class="admin-page">
-      <h1>Admin Panel</h1>
+      <h1 hidden aria-hidden="true">Admin Panel</h1>
       <p id="admin-message" class="admin-message" hidden></p>
       <p id="admin-error" class="error-text" hidden>Unable to load admin data right now.</p>
 
-      <div class="admin-grid">
+      <div class="admin-grid" hidden aria-hidden="true">
         <section class="admin-card">
           <div class="admin-section">
             <h2>Create Category</h2>
@@ -225,7 +225,7 @@
         </section>
       </div>
 
-      <a class="admin-back-link" href="index.html">&#8592; Back to Store</a>
+      <a class="admin-back-link" href="index.html" hidden aria-hidden="true">&#8592; Back to Store</a>
     </main>
 
     <footer class="site-footer" role="contentinfo">
