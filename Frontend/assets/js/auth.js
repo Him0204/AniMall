@@ -3,6 +3,7 @@
   const errorEl = document.getElementById('auth-error');
   const loginForm = document.getElementById('login-form');
   const registerForm = document.getElementById('register-form');
+  const passwordForm = document.getElementById('password-form');
 
   let csrfToken = '';
 
@@ -107,6 +108,40 @@
     registerForm.reset();
   }
 
+  async function handleChangePassword(event) {
+    event.preventDefault();
+    clearMessages();
+
+    const formData = new FormData(passwordForm);
+    const currentPassword = String(formData.get('currentPassword') || '');
+    const newPassword = String(formData.get('newPassword') || '');
+    const confirmPassword = String(formData.get('confirmPassword') || '');
+
+    if (currentPassword.length < 10 || newPassword.length < 10 || newPassword !== confirmPassword) {
+      showMessage('Please provide current password and matching new passwords (min 10 characters).', true);
+      return;
+    }
+
+    const response = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-csrf-token': csrfToken
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.error || 'Unable to change password.');
+    }
+
+    showMessage('Password changed. Please log in again.');
+    passwordForm.reset();
+    setTimeout(() => { window.location.href = 'login.html'; }, 500);
+  }
+
   async function init() {
     try {
       await fetchCsrfToken();
@@ -122,6 +157,12 @@
     registerForm.addEventListener('submit', (event) => {
       handleRegister(event).catch((err) => showMessage(err.message, true));
     });
+
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', (event) => {
+        handleChangePassword(event).catch((err) => showMessage(err.message, true));
+      });
+    }
   }
 
   init();
