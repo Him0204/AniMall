@@ -120,7 +120,9 @@ function sanitizeName(name) {
 const VALID_TYPES = new Set(['Toys', 'Food', 'Treats', 'Accessories', 'Care']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 10;
-const PASSWORD_COMPLEXITY = /^(?=.*[A-Za-z])(?=.*\d).{10,}$/;
+const MAX_PASSWORD_LENGTH = 64;
+// Require letters and digits; allow only safe characters; disallow quotes/whitespace to prevent SQL-looking inputs.
+const PASSWORD_COMPLEXITY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+=-]{10,64}$/;
 
 function isApiRequest(req) {
   return req.path.startsWith('/api');
@@ -172,6 +174,7 @@ function sanitizeEmail(email) {
 
 function validatePassword(password) {
   const value = String(password || '');
+  if (value.length < MIN_PASSWORD_LENGTH || value.length > MAX_PASSWORD_LENGTH) return null;
   return PASSWORD_COMPLEXITY.test(value) ? value : null;
 }
 

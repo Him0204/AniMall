@@ -35,7 +35,7 @@
   }
 
   function isStrongPassword(pwd) {
-    return /^(?=.*[A-Za-z])(?=.*\d).{10,}$/.test(String(pwd || ''));
+    return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+=-]{10,64}$/.test(String(pwd || ''));
   }
 
   function focusFirstInput(section) {
@@ -83,7 +83,7 @@
     const password = String(formData.get('password') || '');
 
     if (!email || !isStrongPassword(password)) {
-      showMessage('Enter a valid email and a password with letters, numbers, and at least 10 characters.', true);
+      showMessage('Enter a valid email and a strong password (letters, numbers, 10-64 chars, no spaces/quotes).', true);
       return;
     }
 
@@ -125,7 +125,7 @@
     }
 
     if (!email || !isStrongPassword(password) || password !== confirmPassword) {
-      showMessage('Please provide a valid email and matching strong passwords (letters, numbers, min 10 characters).', true);
+      showMessage('Please provide a valid email and matching strong passwords (letters, numbers, 10-64 chars, no spaces/quotes).', true);
       return;
     }
 
@@ -163,7 +163,7 @@
     }
 
     if (!isStrongPassword(newPassword) || newPassword !== confirmPassword) {
-      showMessage('Please provide matching strong new passwords (letters, numbers, min 10 characters).', true);
+      showMessage('Please provide matching strong new passwords (letters, numbers, 10-64 chars, no spaces/quotes).', true);
       return;
     }
 
