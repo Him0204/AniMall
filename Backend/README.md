@@ -1,4 +1,4 @@
-# AniMall Phase 2B
+# AniMall Phase 4
 
 ## Install
 ```bash
@@ -9,6 +9,11 @@ npm install
 ## Initialize DB
 ```bash
 npm run init-db
+```
+
+## Mirgrate DB
+```bash
+npm run migrate-db
 ```
 
 ## Start server
