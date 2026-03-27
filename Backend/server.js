@@ -11,7 +11,7 @@ const multer = require('multer');
 const sharp = require('sharp');
 const sqlite3 = require('sqlite3').verbose();
 
-const PORT = Number(process.env.PORT || 80);
+const PORT = Number(process.env.PORT || 3000);
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'db', 'animall.sqlite');
 const SESSION_STORE_PATH = path.join(__dirname, 'db', 'sessions.sqlite');
 const UPLOAD_DIR = path.resolve(__dirname, process.env.UPLOAD_DIR || '../Frontend/assets/uploads');
