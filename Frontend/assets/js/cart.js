@@ -52,6 +52,15 @@ const Cart = (() => {
     update(String(pid), 0);
   }
 
+  function checkoutItemsFromCart(cart) {
+    return Object.entries(cart)
+      .map(([pid, quantity]) => ({
+        pid: Number.parseInt(pid, 10),
+        quantity: Number.parseInt(String(quantity), 10)
+      }))
+      .filter((item) => Number.isInteger(item.pid) && item.pid > 0 && Number.isInteger(item.quantity) && item.quantity > 0);
+  }
+
   /* ---- render cart drawer ---- */
   async function render() {
     updateBadge();
@@ -122,7 +131,7 @@ const Cart = (() => {
   }
 
   /* ---- event delegation ---- */
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', async (e) => {
     const addBtn = e.target.closest('.product-add-btn[data-pid]');
     if (addBtn) {
       add(addBtn.dataset.pid);
@@ -147,6 +156,55 @@ const Cart = (() => {
     const removeBtn = e.target.closest('.cart-remove-btn');
     if (removeBtn) {
       remove(removeBtn.dataset.pid);
+      return;
+    }
+
+    const checkoutBtn = e.target.closest('.cart-checkout-btn');
+    if (checkoutBtn) {
+      e.preventDefault();
+      const cart = load();
+      const items = checkoutItemsFromCart(cart);
+      if (!items.length) {
+        window.alert('Your cart is empty.');
+        return;
+      }
+
+      const originalText = checkoutBtn.textContent;
+      checkoutBtn.disabled = true;
+      checkoutBtn.textContent = 'Processing...';
+
+      try {
+        const authRes = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        const authPayload = await authRes.json().catch(() => ({}));
+        if (!authRes.ok || !authPayload.authenticated) {
+          window.location.href = 'login.html';
+          return;
+        }
+
+        const csrfToken = authPayload.csrfToken || '';
+        const checkoutRes = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-csrf-token': csrfToken
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({ items })
+        });
+        const checkoutPayload = await checkoutRes.json().catch(() => ({}));
+
+        if (!checkoutRes.ok || !checkoutPayload.success || !checkoutPayload.checkoutUrl) {
+          throw new Error(checkoutPayload.error || 'Unable to start checkout.');
+        }
+
+        save({});
+        await render();
+        window.location.href = checkoutPayload.checkoutUrl;
+      } catch (err) {
+        window.alert(err.message || 'Unable to start checkout. Please try again.');
+        checkoutBtn.disabled = false;
+        checkoutBtn.textContent = originalText;
+      }
     }
   });
 

@@ -11,6 +11,9 @@
   const adminGrid = document.querySelector('.admin-grid');
   const adminBackLink = document.querySelector('.admin-back-link');
   const adminHeading = document.querySelector('.admin-page h1');
+  const adminOrdersBody = document.getElementById('admin-orders-body');
+  const adminOrdersEmpty = document.getElementById('admin-orders-empty');
+  const refreshOrdersBtn = document.getElementById('refresh-orders-btn');
 
   const forms = {
     createCategory: document.getElementById('form-create-category'),
@@ -31,6 +34,14 @@
     createProductType: document.getElementById('create-product-type'),
     updateProductType: document.getElementById('update-product-type')
   };
+
+  const esc = (v) =>
+    String(v)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 
   function setAdminContentVisible(isVisible) {
     const toggle = (el) => {
@@ -65,6 +76,31 @@
     opt.value = String(value);
     opt.textContent = label;
     return opt;
+  }
+
+  function formatMoney(cents, currency = 'HKD') {
+    const amount = Number(cents) / 100;
+    if (!Number.isFinite(amount)) return `${currency} 0.00`;
+    return `${currency} ${amount.toFixed(2)}`;
+  }
+
+  function formatTime(ts) {
+    const parsed = Number(ts);
+    if (!Number.isFinite(parsed) || parsed < 1) return '-';
+    return new Date(parsed).toLocaleString();
+  }
+
+  function setOrdersEmpty(isEmpty) {
+    if (adminOrdersEmpty) {
+      adminOrdersEmpty.hidden = !isEmpty;
+    }
+  }
+
+  function itemSummary(items) {
+    if (!Array.isArray(items) || !items.length) return '-';
+    return items
+      .map((item) => `${esc(item.product_name)} x${esc(item.quantity)}`)
+      .join(', ');
   }
 
   function setCsrfInputs(token) {
@@ -147,6 +183,39 @@
     appendCategories(payload.categories || []);
     appendProducts(payload.products || []);
     appendTypes(payload.validTypes || []);
+  }
+
+  async function loadOrders() {
+    if (!adminOrdersBody) return;
+
+    const response = await fetch('/api/admin/orders?limit=80', { credentials: 'same-origin' });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.message || 'Failed to load orders.');
+    }
+
+    const orders = payload.orders || [];
+    if (!orders.length) {
+      adminOrdersBody.innerHTML = '';
+      setOrdersEmpty(true);
+      return;
+    }
+
+    const rows = orders.map((order) => {
+      const userLabel = order.user_email || `User #${order.userid}`;
+      const paidSuffix = order.paid_at ? ` (paid ${esc(formatTime(order.paid_at))})` : '';
+      return `<tr>
+        <td>#${esc(order.orderid)}</td>
+        <td>${esc(userLabel)}</td>
+        <td>${esc(order.status)}${paidSuffix}</td>
+        <td>${esc(formatMoney(order.total_amount_cents, order.currency))}</td>
+        <td>${itemSummary(order.items)}</td>
+        <td>${esc(formatTime(order.created_at))}</td>
+      </tr>`;
+    });
+
+    adminOrdersBody.innerHTML = rows.join('');
+    setOrdersEmpty(false);
   }
 
   function validateName(name) {
@@ -366,6 +435,15 @@
       onDeleteProduct(event).catch((err) => showMessage(err.message, true));
     });
 
+    if (refreshOrdersBtn) {
+      refreshOrdersBtn.addEventListener('click', () => {
+        clearMessage();
+        loadOrders()
+          .then(() => showMessage('Orders refreshed.'))
+          .catch((err) => showMessage(err.message, true));
+      });
+    }
+
   }
 
   function applyLegacyMessageFromQuery() {
@@ -387,6 +465,7 @@
       await loadAdminOptions();
       setAdminContentVisible(true);
       setLoadError(false);
+      await loadOrders();
     } catch (err) {
       setAdminContentVisible(false);
       setLoadError(true);

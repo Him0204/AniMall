@@ -11,6 +11,9 @@ db.serialize(() => {
   db.run('PRAGMA foreign_keys = ON');
   db.run('BEGIN TRANSACTION');
 
+  db.run('DROP TABLE IF EXISTS webhook_events');
+  db.run('DROP TABLE IF EXISTS order_items');
+  db.run('DROP TABLE IF EXISTS orders');
   db.run('DROP TABLE IF EXISTS product_images');
   db.run('DROP TABLE IF EXISTS products');
   db.run('DROP TABLE IF EXISTS categories');

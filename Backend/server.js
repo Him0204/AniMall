@@ -21,6 +21,21 @@ const SESSION_COOKIE_NAME = 'animall.sid';
 const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 48; // 48 hours < 3 days
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== 'false';
 const MAX_NAME_LENGTH = 120;
+const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const STRIPE_CURRENCY = String(process.env.STRIPE_CURRENCY || 'hkd').toLowerCase();
+const MERCHANT_IDENTIFIER = String(process.env.MERCHANT_IDENTIFIER || 'IERG4210');
+const ORDER_DIGEST_SECRET = process.env.ORDER_DIGEST_SECRET || SESSION_SECRET;
+
+let stripe = null;
+if (STRIPE_SECRET_KEY) {
+  try {
+    stripe = require('stripe')(STRIPE_SECRET_KEY);
+  } catch (err) {
+    console.error('Stripe SDK unavailable:', err.message);
+  }
+}
 
 if (!SESSION_SECRET) {
   throw new Error('Missing SESSION_SECRET environment variable.');
@@ -53,7 +68,14 @@ app.use(helmet({
 }));
 
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({
+  limit: '1mb',
+  verify: (req, res, buf) => {
+    if (req.originalUrl.startsWith('/api/webhooks/stripe')) {
+      req.rawBody = Buffer.from(buf);
+    }
+  }
+}));
 
 app.use(session({
   name: SESSION_COOKIE_NAME,
@@ -201,6 +223,187 @@ function sanitizePrice(price) {
 function sanitizeType(type) {
   const value = String(type || '').trim();
   return VALID_TYPES.has(value) ? value : null;
+}
+
+function toPositiveInt(value) {
+  const parsed = Number.parseInt(String(value), 10);
+  if (!Number.isInteger(parsed) || parsed < 1) return null;
+  return parsed;
+}
+
+function moneyToCents(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) return null;
+  return Math.round(numeric * 100);
+}
+
+function centsToMoney(cents) {
+  if (!Number.isInteger(cents) || cents < 0) return null;
+  return cents / 100;
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isSqliteConstraintError(err) {
+  return Boolean(err) && (err.code === 'SQLITE_CONSTRAINT' || String(err.message || '').includes('SQLITE_CONSTRAINT'));
+}
+
+function normalizeCheckoutItems(items) {
+  if (!Array.isArray(items) || items.length < 1 || items.length > 100) return null;
+
+  const aggregated = new Map();
+  for (const item of items) {
+    if (!isPlainObject(item)) return null;
+    const keys = Object.keys(item);
+    if (keys.length !== 2 || !keys.includes('pid') || !keys.includes('quantity')) return null;
+
+    const pid = toPositiveInt(item.pid);
+    const quantity = toPositiveInt(item.quantity);
+    if (!pid || !quantity || quantity > 1000) return null;
+
+    const totalQty = (aggregated.get(pid) || 0) + quantity;
+    if (totalQty > 1000) return null;
+    aggregated.set(pid, totalQty);
+  }
+
+  return Array.from(aggregated.entries())
+    .map(([pid, quantity]) => ({ pid, quantity }))
+    .sort((a, b) => a.pid - b.pid);
+}
+
+function buildDigestInput({ currency, merchantId, salt, items, totalAmountCents }) {
+  const lines = items
+    .map((item) => `${item.pid}:${item.quantity}:${item.unit_price_cents}`)
+    .join('|');
+  return `${currency}|${merchantId}|${salt}|${lines}|${totalAmountCents}`;
+}
+
+function computeOrderDigest(digestInput) {
+  return crypto
+    .createHmac('sha256', ORDER_DIGEST_SECRET)
+    .update(digestInput)
+    .digest('hex');
+}
+
+async function createPendingOrder(userid, normalizedItems) {
+  const pids = normalizedItems.map((item) => item.pid);
+  const placeholders = pids.map(() => '?').join(',');
+  const products = await allAsync(
+    `SELECT pid, name, price FROM products WHERE pid IN (${placeholders})`,
+    pids
+  );
+
+  if (products.length !== pids.length) {
+    return { error: 'One or more products are unavailable.' };
+  }
+
+  const productMap = new Map(products.map((product) => [product.pid, product]));
+  const canonicalItems = [];
+  let totalAmountCents = 0;
+
+  for (const item of normalizedItems) {
+    const product = productMap.get(item.pid);
+    if (!product) {
+      return { error: 'One or more products are unavailable.' };
+    }
+    const unitPriceCents = moneyToCents(product.price);
+    if (unitPriceCents === null) {
+      return { error: 'One or more products has an invalid price.' };
+    }
+
+    const lineTotalCents = unitPriceCents * item.quantity;
+    totalAmountCents += lineTotalCents;
+    canonicalItems.push({
+      pid: item.pid,
+      quantity: item.quantity,
+      product_name: String(product.name || 'Product').slice(0, MAX_NAME_LENGTH),
+      unit_price_cents: unitPriceCents,
+      line_total_cents: lineTotalCents
+    });
+  }
+
+  const currency = STRIPE_CURRENCY.toUpperCase();
+  const salt = crypto.randomBytes(32).toString('hex');
+  const digestInput = buildDigestInput({
+    currency,
+    merchantId: MERCHANT_IDENTIFIER,
+    salt,
+    items: canonicalItems,
+    totalAmountCents
+  });
+  const digest = computeOrderDigest(digestInput);
+  const now = Date.now();
+
+  await runAsync('BEGIN IMMEDIATE');
+  try {
+    const inserted = await runAsync(
+      `INSERT INTO orders
+        (userid, currency, merchant_id, digest_salt, digest, total_amount_cents, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+      [userid, currency, MERCHANT_IDENTIFIER, salt, digest, totalAmountCents, now, now]
+    );
+
+    for (const item of canonicalItems) {
+      await runAsync(
+        `INSERT INTO order_items
+          (orderid, pid, product_name, quantity, unit_price_cents, line_total_cents)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [inserted.lastID, item.pid, item.product_name, item.quantity, item.unit_price_cents, item.line_total_cents]
+      );
+    }
+
+    await runAsync('COMMIT');
+
+    return {
+      orderId: inserted.lastID,
+      currency,
+      totalAmountCents,
+      digest,
+      digestInput,
+      digestSalt: salt,
+      items: canonicalItems
+    };
+  } catch (err) {
+    await runAsync('ROLLBACK').catch(() => {});
+    throw err;
+  }
+}
+
+function formatOrderResponse(order, itemsByOrderId = new Map()) {
+  return {
+    orderid: order.orderid,
+    userid: order.userid,
+    user_email: order.user_email || null,
+    currency: order.currency,
+    total_amount_cents: order.total_amount_cents,
+    total_amount: centsToMoney(order.total_amount_cents),
+    status: order.status,
+    stripe_checkout_session_id: order.stripe_checkout_session_id || null,
+    stripe_payment_intent_id: order.stripe_payment_intent_id || null,
+    created_at: order.created_at,
+    paid_at: order.paid_at || null,
+    items: itemsByOrderId.get(order.orderid) || []
+  };
+}
+
+function mapOrderItemsByOrderId(rows) {
+  const itemMap = new Map();
+  rows.forEach((row) => {
+    const list = itemMap.get(row.orderid) || [];
+    list.push({
+      pid: row.pid,
+      product_name: row.product_name,
+      quantity: row.quantity,
+      unit_price_cents: row.unit_price_cents,
+      unit_price: centsToMoney(row.unit_price_cents),
+      line_total_cents: row.line_total_cents,
+      line_total: centsToMoney(row.line_total_cents)
+    });
+    itemMap.set(row.orderid, list);
+  });
+  return itemMap;
 }
 
 async function saveProductImage(pid, fileBuffer, sortOrder) {
@@ -374,6 +577,295 @@ app.get('/api/product/:pid', async (req, res) => {
     res.json(row);
   } catch {
     res.status(500).json({ error: 'Unable to fetch product.' });
+  }
+});
+
+app.post('/api/checkout', requireAuth, ensureCsrfToken, requireCsrf, async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Checkout service is unavailable.' });
+  }
+
+  if (!isPlainObject(req.body) || Object.keys(req.body).length !== 1 || !Object.prototype.hasOwnProperty.call(req.body, 'items')) {
+    return res.status(400).json({ error: 'Invalid checkout input.' });
+  }
+
+  const normalizedItems = normalizeCheckoutItems(req.body.items);
+  if (!normalizedItems) {
+    return res.status(400).json({ error: 'Invalid checkout items.' });
+  }
+
+  let pendingOrder = null;
+  try {
+    pendingOrder = await createPendingOrder(req.session.user.userid, normalizedItems);
+    if (pendingOrder.error) {
+      return res.status(400).json({ error: pendingOrder.error });
+    }
+
+    const lineItems = pendingOrder.items.map((item) => ({
+      quantity: item.quantity,
+      price_data: {
+        currency: STRIPE_CURRENCY,
+        unit_amount: item.unit_price_cents,
+        product_data: {
+          name: item.product_name
+        }
+      }
+    }));
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: lineItems,
+      success_url: `${APP_BASE_URL}/index.html?checkout=success&orderId=${pendingOrder.orderId}`,
+      cancel_url: `${APP_BASE_URL}/index.html?checkout=cancel&orderId=${pendingOrder.orderId}`,
+      client_reference_id: String(pendingOrder.orderId),
+      metadata: {
+        orderId: String(pendingOrder.orderId),
+        userId: String(req.session.user.userid),
+        merchantId: MERCHANT_IDENTIFIER
+      }
+    });
+
+    await runAsync(
+      'UPDATE orders SET stripe_checkout_session_id = ?, updated_at = ? WHERE orderid = ?',
+      [session.id, Date.now(), pendingOrder.orderId]
+    );
+
+    return res.json({
+      success: true,
+      orderId: pendingOrder.orderId,
+      checkoutUrl: session.url
+    });
+  } catch (err) {
+    if (pendingOrder && pendingOrder.orderId) {
+      await runAsync(
+        "UPDATE orders SET status = 'failed', updated_at = ? WHERE orderid = ? AND status = 'pending'",
+        [Date.now(), pendingOrder.orderId]
+      ).catch(() => {});
+    }
+    return res.status(500).json({ error: 'Unable to initialize checkout at this time.' });
+  }
+});
+
+app.post('/api/webhooks/stripe', async (req, res) => {
+  if (!stripe || !STRIPE_WEBHOOK_SECRET) {
+    return res.status(503).json({ error: 'Webhook service is unavailable.' });
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    const forwardedProto = req.get('x-forwarded-proto');
+    const isSecure = req.secure || forwardedProto === 'https';
+    if (!isSecure) {
+      return res.status(400).json({ error: 'HTTPS is required.' });
+    }
+  }
+
+  const signature = req.get('stripe-signature');
+  if (!signature || !req.rawBody) {
+    return res.status(400).json({ error: 'Missing webhook signature.' });
+  }
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.rawBody, signature, STRIPE_WEBHOOK_SECRET);
+  } catch {
+    return res.status(400).json({ error: 'Invalid webhook signature.' });
+  }
+
+  let webhookEventId = null;
+  try {
+    const inserted = await runAsync(
+      `INSERT INTO webhook_events
+        (provider, external_event_id, event_type, payload, processed, created_at)
+       VALUES (?, ?, ?, ?, 0, ?)`,
+      ['stripe', event.id, event.type, req.rawBody.toString('utf8'), Date.now()]
+    );
+    webhookEventId = inserted.lastID;
+  } catch (err) {
+    if (isSqliteConstraintError(err)) {
+      return res.json({ received: true, duplicate: true });
+    }
+    return res.status(500).json({ error: 'Unable to record webhook event.' });
+  }
+
+  try {
+    if (event.type !== 'checkout.session.completed') {
+      await runAsync(
+        'UPDATE webhook_events SET processed = 1, processed_at = ? WHERE webhook_eventid = ?',
+        [Date.now(), webhookEventId]
+      );
+      return res.json({ received: true });
+    }
+
+    const eventSession = event.data && event.data.object ? event.data.object : null;
+    const orderId = toPositiveInt(
+      eventSession
+      && ((eventSession.metadata && eventSession.metadata.orderId) || eventSession.client_reference_id)
+    );
+
+    if (!orderId) {
+      await runAsync(
+        'UPDATE webhook_events SET processed = 1, processed_at = ? WHERE webhook_eventid = ?',
+        [Date.now(), webhookEventId]
+      );
+      return res.json({ received: true });
+    }
+
+    const order = await getAsync(
+      `SELECT orderid, userid, currency, merchant_id, digest_salt, digest,
+              total_amount_cents, status, stripe_payment_intent_id
+       FROM orders WHERE orderid = ?`,
+      [orderId]
+    );
+
+    if (!order) {
+      return res.status(400).json({ error: 'Unknown order for webhook event.' });
+    }
+
+    const orderItems = await allAsync(
+      'SELECT orderid, pid, quantity, unit_price_cents FROM order_items WHERE orderid = ? ORDER BY pid',
+      [orderId]
+    );
+
+    const recomputedDigestInput = buildDigestInput({
+      currency: order.currency,
+      merchantId: order.merchant_id,
+      salt: order.digest_salt,
+      items: orderItems,
+      totalAmountCents: order.total_amount_cents
+    });
+    const recomputedDigest = computeOrderDigest(recomputedDigestInput);
+
+    const amountTotal = Number.isInteger(eventSession.amount_total)
+      ? eventSession.amount_total
+      : Number.parseInt(String(eventSession.amount_total), 10);
+    const currency = String(eventSession.currency || '').toUpperCase();
+    const digestMatches = recomputedDigest === order.digest;
+    const amountMatches = Number.isInteger(amountTotal) && amountTotal === order.total_amount_cents;
+    const currencyMatches = currency === order.currency;
+
+    if (!digestMatches || !amountMatches || !currencyMatches) {
+      await runAsync(
+        'UPDATE webhook_events SET orderid = ?, processed = 1, processed_at = ? WHERE webhook_eventid = ?',
+        [orderId, Date.now(), webhookEventId]
+      );
+      await runAsync(
+        "UPDATE orders SET status = 'failed', updated_at = ? WHERE orderid = ? AND status = 'pending'",
+        [Date.now(), orderId]
+      );
+      return res.status(400).json({ error: 'Webhook payload validation failed.' });
+    }
+
+    if (order.status === 'paid') {
+      await runAsync(
+        'UPDATE webhook_events SET orderid = ?, processed = 1, processed_at = ? WHERE webhook_eventid = ?',
+        [orderId, Date.now(), webhookEventId]
+      );
+      return res.json({ received: true, duplicate: true });
+    }
+
+    const paidAt = Date.now();
+    await runAsync('BEGIN IMMEDIATE');
+    try {
+      await runAsync(
+        `UPDATE orders
+         SET status = 'paid',
+             stripe_payment_intent_id = ?,
+             stripe_event_id = ?,
+             paid_at = ?,
+             updated_at = ?
+         WHERE orderid = ?`,
+        [
+          eventSession.payment_intent ? String(eventSession.payment_intent) : null,
+          event.id,
+          paidAt,
+          paidAt,
+          orderId
+        ]
+      );
+
+      await runAsync(
+        'UPDATE webhook_events SET orderid = ?, processed = 1, processed_at = ? WHERE webhook_eventid = ?',
+        [orderId, paidAt, webhookEventId]
+      );
+
+      await runAsync('COMMIT');
+    } catch (err) {
+      await runAsync('ROLLBACK').catch(() => {});
+      throw err;
+    }
+
+    return res.json({ received: true });
+  } catch {
+    return res.status(500).json({ error: 'Unable to process webhook event.' });
+  }
+});
+
+app.get('/api/orders/recent', requireAuth, async (req, res) => {
+  try {
+    const orders = await allAsync(
+      `SELECT orderid, userid, currency, total_amount_cents, status,
+              stripe_checkout_session_id, stripe_payment_intent_id, created_at, paid_at
+       FROM orders
+       WHERE userid = ?
+       ORDER BY created_at DESC
+       LIMIT 5`,
+      [req.session.user.userid]
+    );
+
+    if (orders.length === 0) {
+      return res.json({ success: true, orders: [] });
+    }
+
+    const placeholders = orders.map(() => '?').join(',');
+    const items = await allAsync(
+      `SELECT orderid, pid, product_name, quantity, unit_price_cents, line_total_cents
+       FROM order_items
+       WHERE orderid IN (${placeholders})
+       ORDER BY orderid DESC, order_itemid ASC`,
+      orders.map((order) => order.orderid)
+    );
+
+    const itemMap = mapOrderItemsByOrderId(items);
+    return res.json({ success: true, orders: orders.map((order) => formatOrderResponse(order, itemMap)) });
+  } catch {
+    return res.status(500).json({ error: 'Unable to load recent orders.' });
+  }
+});
+
+app.get('/api/admin/orders', requireAuth, requireAdmin, async (req, res) => {
+  const limitRaw = Number.parseInt(String(req.query.limit || '50'), 10);
+  const limit = Number.isInteger(limitRaw) && limitRaw > 0 && limitRaw <= 200 ? limitRaw : 50;
+
+  try {
+    const orders = await allAsync(
+      `SELECT o.orderid, o.userid, u.email AS user_email,
+              o.currency, o.total_amount_cents, o.status,
+              o.stripe_checkout_session_id, o.stripe_payment_intent_id,
+              o.created_at, o.paid_at
+       FROM orders o
+       LEFT JOIN users u ON u.userid = o.userid
+       ORDER BY o.created_at DESC
+       LIMIT ?`,
+      [limit]
+    );
+
+    if (orders.length === 0) {
+      return res.json({ success: true, orders: [] });
+    }
+
+    const placeholders = orders.map(() => '?').join(',');
+    const items = await allAsync(
+      `SELECT orderid, pid, product_name, quantity, unit_price_cents, line_total_cents
+       FROM order_items
+       WHERE orderid IN (${placeholders})
+       ORDER BY orderid DESC, order_itemid ASC`,
+      orders.map((order) => order.orderid)
+    );
+
+    const itemMap = mapOrderItemsByOrderId(items);
+    return res.json({ success: true, orders: orders.map((order) => formatOrderResponse(order, itemMap)) });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Failed to load orders.' });
   }
 });
 

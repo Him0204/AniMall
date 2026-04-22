@@ -49,6 +49,7 @@
               </li>
               <li><a href="index.html#about">About Us</a></li>
               <li><a href="index.html#contact">Contact Us</a></li>
+              <li><a href="member.html">Member</a></li>
               <li><a class="admin-link" href="admin.html" aria-current="page">Admin</a></li>
             </ul>
           </nav>
@@ -102,6 +103,7 @@
             </li>
             <li><a href="index.html#about">About Us</a></li>
             <li><a href="index.html#contact">Contact Us</a></li>
+            <li><a href="member.html">Member</a></li>
             <li><a class="admin-link" href="admin.html" aria-current="page">Admin</a></li>
           </ul>
         </nav>
@@ -221,6 +223,30 @@
               </label>
               <button type="submit" class="btn-danger">Delete</button>
             </form>
+          </div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-section">
+            <h2>Orders</h2>
+            <p class="admin-orders-note">Latest order snapshots with payment status and purchased items.</p>
+            <div class="admin-orders-table-wrap">
+              <table class="orders-table" aria-label="Orders list">
+                <thead>
+                  <tr>
+                    <th scope="col">Order</th>
+                    <th scope="col">User</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Items</th>
+                    <th scope="col">Created</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-orders-body"></tbody>
+              </table>
+            </div>
+            <p id="admin-orders-empty" class="admin-orders-empty" hidden>No orders available yet.</p>
+            <button id="refresh-orders-btn" type="button" class="btn-primary">Refresh Orders</button>
           </div>
         </section>
       </div>
