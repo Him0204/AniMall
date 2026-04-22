@@ -25,7 +25,7 @@ const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const STRIPE_CURRENCY = String(process.env.STRIPE_CURRENCY || 'hkd').toLowerCase();
-const MERCHANT_IDENTIFIER = String(process.env.MERCHANT_IDENTIFIER || 'IERG4210');
+const MERCHANT_EMAIL = String(process.env.MERCHANT_EMAIL || '').trim().toLowerCase();
 const ORDER_DIGEST_SECRET = process.env.ORDER_DIGEST_SECRET || SESSION_SECRET;
 const STRIPE_WEBHOOK_PATHS = ['/api/webhooks/stripe', '/api/webhook/stripe', '/api/stripe/webhook'];
 const DEFAULT_MEMBER_PAID_LIMIT = 5;
@@ -161,6 +161,10 @@ const MAX_PASSWORD_LENGTH = 64;
 // Require letters and digits; allow only safe characters; disallow quotes/whitespace to prevent SQL-looking inputs.
 const PASSWORD_COMPLEXITY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+=-]{10,64}$/;
 
+if (!EMAIL_PATTERN.test(MERCHANT_EMAIL)) {
+  throw new Error('Missing or invalid MERCHANT_EMAIL environment variable.');
+}
+
 function isApiRequest(req) {
   return req.path.startsWith('/api');
 }
@@ -287,11 +291,11 @@ function normalizeCheckoutItems(items) {
     .sort((a, b) => a.pid - b.pid);
 }
 
-function buildDigestInput({ currency, merchantId, salt, items, totalAmountCents }) {
+function buildDigestInput({ currency, merchantEmail, salt, items, totalAmountCents }) {
   const lines = items
     .map((item) => `${item.pid}:${item.quantity}:${item.unit_price_cents}`)
     .join('|');
-  return `${currency}|${merchantId}|${salt}|${lines}|${totalAmountCents}`;
+  return `${currency}|${merchantEmail}|${salt}|${lines}|${totalAmountCents}`;
 }
 
 function computeOrderDigest(digestInput) {
@@ -342,7 +346,7 @@ async function createPendingOrder(userid, normalizedItems) {
   const salt = crypto.randomBytes(32).toString('hex');
   const digestInput = buildDigestInput({
     currency,
-    merchantId: MERCHANT_IDENTIFIER,
+    merchantEmail: MERCHANT_EMAIL,
     salt,
     items: canonicalItems,
     totalAmountCents
@@ -356,7 +360,7 @@ async function createPendingOrder(userid, normalizedItems) {
       `INSERT INTO orders
         (userid, currency, merchant_id, digest_salt, digest, total_amount_cents, status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-      [userid, currency, MERCHANT_IDENTIFIER, salt, digest, totalAmountCents, now, now]
+      [userid, currency, MERCHANT_EMAIL, salt, digest, totalAmountCents, now, now]
     );
 
     for (const item of canonicalItems) {
@@ -433,7 +437,7 @@ async function createStripeCheckoutSessionForOrder({ orderId, userId, currency, 
     metadata: {
       orderId: String(orderId),
       userId: String(userId),
-      merchantId: MERCHANT_IDENTIFIER
+      merchantEmail: MERCHANT_EMAIL
     }
   });
 
@@ -905,7 +909,7 @@ app.post(STRIPE_WEBHOOK_PATHS, async (req, res) => {
 
     const recomputedDigestInput = buildDigestInput({
       currency: order.currency,
-      merchantId: order.merchant_id,
+      merchantEmail: order.merchant_id,
       salt: order.digest_salt,
       items: orderItems,
       totalAmountCents: order.total_amount_cents

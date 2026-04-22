@@ -30,7 +30,7 @@ APP_BASE_URL=http://localhost:3000
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_CURRENCY=hkd
-MERCHANT_IDENTIFIER=IERG4210
+MERCHANT_EMAIL=merchant@example.com
 ORDER_DIGEST_SECRET=long-random-secret
 ```
 
