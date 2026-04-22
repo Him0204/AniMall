@@ -27,7 +27,9 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const STRIPE_CURRENCY = String(process.env.STRIPE_CURRENCY || 'hkd').toLowerCase();
 const MERCHANT_IDENTIFIER = String(process.env.MERCHANT_IDENTIFIER || 'IERG4210');
 const ORDER_DIGEST_SECRET = process.env.ORDER_DIGEST_SECRET || SESSION_SECRET;
-const STRIPE_WEBHOOK_PATHS = ['/api/webhooks/stripe', '/api/webhook/stripe'];
+const STRIPE_WEBHOOK_PATHS = ['/api/webhooks/stripe', '/api/webhook/stripe', '/api/stripe/webhook'];
+const DEFAULT_MEMBER_PAID_LIMIT = 5;
+const MAX_MEMBER_PAID_LIMIT = 50;
 
 function normalizeRequestPath(urlLike) {
   const pathOnly = String(urlLike || '').split('?')[0];
@@ -383,6 +385,88 @@ async function createPendingOrder(userid, normalizedItems) {
   }
 }
 
+function buildCheckoutReturnUrls(orderId) {
+  return {
+    successUrl: `${APP_BASE_URL}/checkout.html?result=success&orderId=${orderId}`,
+    cancelUrl: `${APP_BASE_URL}/checkout.html?result=cancel&orderId=${orderId}`
+  };
+}
+
+async function createStripeCheckoutSessionForOrder({ orderId, userId, currency, items }) {
+  if (!stripe) {
+    return { error: 'Checkout service is unavailable.', status: 503 };
+  }
+
+  if (!Array.isArray(items) || items.length < 1) {
+    return { error: 'Order has no payable items.', status: 400 };
+  }
+
+  const normalizedLineItems = [];
+  for (const item of items) {
+    const quantity = toPositiveInt(item.quantity);
+    const unitPriceCents = Number.parseInt(String(item.unit_price_cents), 10);
+    const productName = String(item.product_name || 'Product').slice(0, MAX_NAME_LENGTH);
+
+    if (!quantity || !Number.isInteger(unitPriceCents) || unitPriceCents < 0) {
+      return { error: 'Invalid order item data.', status: 400 };
+    }
+
+    normalizedLineItems.push({
+      quantity,
+      price_data: {
+        currency: String(currency || STRIPE_CURRENCY).toLowerCase(),
+        unit_amount: unitPriceCents,
+        product_data: {
+          name: productName
+        }
+      }
+    });
+  }
+
+  const urls = buildCheckoutReturnUrls(orderId);
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    line_items: normalizedLineItems,
+    success_url: urls.successUrl,
+    cancel_url: urls.cancelUrl,
+    client_reference_id: String(orderId),
+    metadata: {
+      orderId: String(orderId),
+      userId: String(userId),
+      merchantId: MERCHANT_IDENTIFIER
+    }
+  });
+
+  await runAsync(
+    'UPDATE orders SET stripe_checkout_session_id = ?, updated_at = ? WHERE orderid = ?',
+    [session.id, Date.now(), orderId]
+  );
+
+  return { success: true, checkoutUrl: session.url };
+}
+
+async function fetchOrderWithItemsForUser(orderId, userId) {
+  const order = await getAsync(
+    `SELECT orderid, userid, currency, total_amount_cents, status,
+            stripe_checkout_session_id, stripe_payment_intent_id, created_at, paid_at
+     FROM orders
+     WHERE orderid = ? AND userid = ?`,
+    [orderId, userId]
+  );
+
+  if (!order) return null;
+
+  const items = await allAsync(
+    `SELECT orderid, pid, product_name, quantity, unit_price_cents, line_total_cents
+     FROM order_items
+     WHERE orderid = ?
+     ORDER BY order_itemid ASC`,
+    [orderId]
+  );
+
+  return { order, items };
+}
+
 function formatOrderResponse(order, itemsByOrderId = new Map()) {
   return {
     orderid: order.orderid,
@@ -564,10 +648,6 @@ app.get('/api/product/:pid', async (req, res) => {
 });
 
 app.post('/api/checkout', requireAuth, ensureCsrfToken, requireCsrf, async (req, res) => {
-  if (!stripe) {
-    return res.status(503).json({ error: 'Checkout service is unavailable.' });
-  }
-
   if (!isPlainObject(req.body) || Object.keys(req.body).length !== 1 || !Object.prototype.hasOwnProperty.call(req.body, 'items')) {
     return res.status(400).json({ error: 'Invalid checkout input.' });
   }
@@ -584,39 +664,21 @@ app.post('/api/checkout', requireAuth, ensureCsrfToken, requireCsrf, async (req,
       return res.status(400).json({ error: pendingOrder.error });
     }
 
-    const lineItems = pendingOrder.items.map((item) => ({
-      quantity: item.quantity,
-      price_data: {
-        currency: STRIPE_CURRENCY,
-        unit_amount: item.unit_price_cents,
-        product_data: {
-          name: item.product_name
-        }
-      }
-    }));
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: lineItems,
-      success_url: `${APP_BASE_URL}/index.html?checkout=success&orderId=${pendingOrder.orderId}`,
-      cancel_url: `${APP_BASE_URL}/index.html?checkout=cancel&orderId=${pendingOrder.orderId}`,
-      client_reference_id: String(pendingOrder.orderId),
-      metadata: {
-        orderId: String(pendingOrder.orderId),
-        userId: String(req.session.user.userid),
-        merchantId: MERCHANT_IDENTIFIER
-      }
+    const checkoutSession = await createStripeCheckoutSessionForOrder({
+      orderId: pendingOrder.orderId,
+      userId: req.session.user.userid,
+      currency: pendingOrder.currency,
+      items: pendingOrder.items
     });
 
-    await runAsync(
-      'UPDATE orders SET stripe_checkout_session_id = ?, updated_at = ? WHERE orderid = ?',
-      [session.id, Date.now(), pendingOrder.orderId]
-    );
+    if (!checkoutSession.success) {
+      return res.status(checkoutSession.status || 500).json({ error: checkoutSession.error || 'Unable to initialize checkout.' });
+    }
 
     return res.json({
       success: true,
       orderId: pendingOrder.orderId,
-      checkoutUrl: session.url
+      checkoutUrl: checkoutSession.checkoutUrl
     });
   } catch (err) {
     if (pendingOrder && pendingOrder.orderId) {
@@ -626,6 +688,138 @@ app.post('/api/checkout', requireAuth, ensureCsrfToken, requireCsrf, async (req,
       ).catch(() => {});
     }
     return res.status(500).json({ error: 'Unable to initialize checkout at this time.' });
+  }
+});
+
+app.get('/api/orders/member', requireAuth, async (req, res) => {
+  const paidLimitRaw = Number.parseInt(String(req.query.paidLimit || ''), 10);
+  const paidLimit = Number.isInteger(paidLimitRaw) && paidLimitRaw > 0 && paidLimitRaw <= MAX_MEMBER_PAID_LIMIT
+    ? paidLimitRaw
+    : DEFAULT_MEMBER_PAID_LIMIT;
+
+  try {
+    const [pendingOrders, paidOrders] = await Promise.all([
+      allAsync(
+        `SELECT orderid, userid, currency, total_amount_cents, status,
+                stripe_checkout_session_id, stripe_payment_intent_id, created_at, paid_at
+         FROM orders
+         WHERE userid = ? AND status = 'pending'
+         ORDER BY created_at DESC`,
+        [req.session.user.userid]
+      ),
+      allAsync(
+        `SELECT orderid, userid, currency, total_amount_cents, status,
+                stripe_checkout_session_id, stripe_payment_intent_id, created_at, paid_at
+         FROM orders
+         WHERE userid = ? AND status = 'paid'
+         ORDER BY created_at DESC
+         LIMIT ?`,
+        [req.session.user.userid, paidLimit]
+      )
+    ]);
+
+    const orders = [...pendingOrders, ...paidOrders];
+    if (!orders.length) {
+      return res.json({ success: true, orders: [] });
+    }
+
+    const placeholders = orders.map(() => '?').join(',');
+    const items = await allAsync(
+      `SELECT orderid, pid, product_name, quantity, unit_price_cents, line_total_cents
+       FROM order_items
+       WHERE orderid IN (${placeholders})
+       ORDER BY orderid DESC, order_itemid ASC`,
+      orders.map((order) => order.orderid)
+    );
+
+    const itemMap = mapOrderItemsByOrderId(items);
+    return res.json({ success: true, orders: orders.map((order) => formatOrderResponse(order, itemMap)) });
+  } catch {
+    return res.status(500).json({ error: 'Unable to load member orders.' });
+  }
+});
+
+app.get('/api/orders/:orderId(\\d+)', requireAuth, async (req, res) => {
+  const orderId = toPositiveInt(req.params.orderId);
+  if (!orderId) {
+    return res.status(400).json({ error: 'Invalid order ID.' });
+  }
+
+  try {
+    const orderData = await fetchOrderWithItemsForUser(orderId, req.session.user.userid);
+    if (!orderData) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    const itemMap = mapOrderItemsByOrderId(orderData.items);
+    return res.json({ success: true, order: formatOrderResponse(orderData.order, itemMap) });
+  } catch {
+    return res.status(500).json({ error: 'Unable to load order details.' });
+  }
+});
+
+app.post('/api/orders/:orderId(\\d+)/checkout-session', requireAuth, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const orderId = toPositiveInt(req.params.orderId);
+  if (!orderId) {
+    return res.status(400).json({ error: 'Invalid order ID.' });
+  }
+
+  try {
+    const orderData = await fetchOrderWithItemsForUser(orderId, req.session.user.userid);
+    if (!orderData) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    if (orderData.order.status !== 'pending') {
+      return res.status(409).json({ error: 'Only pending orders can continue payment.' });
+    }
+
+    const checkoutSession = await createStripeCheckoutSessionForOrder({
+      orderId: orderData.order.orderid,
+      userId: req.session.user.userid,
+      currency: orderData.order.currency,
+      items: orderData.items
+    });
+
+    if (!checkoutSession.success) {
+      return res.status(checkoutSession.status || 500).json({ error: checkoutSession.error || 'Unable to create checkout session.' });
+    }
+
+    return res.json({
+      success: true,
+      orderId: orderData.order.orderid,
+      checkoutUrl: checkoutSession.checkoutUrl
+    });
+  } catch {
+    return res.status(500).json({ error: 'Unable to continue payment.' });
+  }
+});
+
+app.post('/api/orders/:orderId(\\d+)/cancel', requireAuth, ensureCsrfToken, requireCsrf, async (req, res) => {
+  const orderId = toPositiveInt(req.params.orderId);
+  if (!orderId) {
+    return res.status(400).json({ error: 'Invalid order ID.' });
+  }
+
+  const now = Date.now();
+
+  try {
+    const result = await runAsync(
+      "UPDATE orders SET status = 'cancelled', updated_at = ? WHERE orderid = ? AND userid = ? AND status = 'pending'",
+      [now, orderId, req.session.user.userid]
+    );
+
+    if (!result.changes) {
+      const existing = await getAsync('SELECT orderid, status FROM orders WHERE orderid = ? AND userid = ?', [orderId, req.session.user.userid]);
+      if (!existing) {
+        return res.status(404).json({ error: 'Order not found.' });
+      }
+      return res.status(409).json({ error: 'Only pending orders can be cancelled.' });
+    }
+
+    return res.json({ success: true, orderId, status: 'cancelled' });
+  } catch {
+    return res.status(500).json({ error: 'Unable to cancel pending order.' });
   }
 });
 

@@ -19,6 +19,11 @@ const Cart = (() => {
     localStorage.setItem(KEY, JSON.stringify(cart));
   }
 
+  function clear() {
+    save({});
+    return render();
+  }
+
   /* ---- badge ---- */
   function updateBadge() {
     const cart = load();
@@ -50,6 +55,14 @@ const Cart = (() => {
 
   function remove(pid) {
     update(String(pid), 0);
+  }
+
+  function getCart() {
+    return load();
+  }
+
+  function getCheckoutItems() {
+    return checkoutItemsFromCart(load());
   }
 
   function checkoutItemsFromCart(cart) {
@@ -162,54 +175,25 @@ const Cart = (() => {
     const checkoutBtn = e.target.closest('.cart-checkout-btn');
     if (checkoutBtn) {
       e.preventDefault();
-      const cart = load();
-      const items = checkoutItemsFromCart(cart);
+      const items = getCheckoutItems();
       if (!items.length) {
         window.alert('Your cart is empty.');
         return;
       }
-
-      const originalText = checkoutBtn.textContent;
-      checkoutBtn.disabled = true;
-      checkoutBtn.textContent = 'Processing...';
-
-      try {
-        const authRes = await fetch('/api/auth/me', { credentials: 'same-origin' });
-        const authPayload = await authRes.json().catch(() => ({}));
-        if (!authRes.ok || !authPayload.authenticated) {
-          window.location.href = 'login.html';
-          return;
-        }
-
-        const csrfToken = authPayload.csrfToken || '';
-        const checkoutRes = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-csrf-token': csrfToken
-          },
-          credentials: 'same-origin',
-          body: JSON.stringify({ items })
-        });
-        const checkoutPayload = await checkoutRes.json().catch(() => ({}));
-
-        if (!checkoutRes.ok || !checkoutPayload.success || !checkoutPayload.checkoutUrl) {
-          throw new Error(checkoutPayload.error || 'Unable to start checkout.');
-        }
-
-        save({});
-        await render();
-        window.location.href = checkoutPayload.checkoutUrl;
-      } catch (err) {
-        window.alert(err.message || 'Unable to start checkout. Please try again.');
-        checkoutBtn.disabled = false;
-        checkoutBtn.textContent = originalText;
-      }
+      window.location.href = 'checkout.html';
     }
   });
 
   /* ---- restore cart on every page load ---- */
   render();
 
-  return { add, update, remove, render };
+  return {
+    add,
+    update,
+    remove,
+    render,
+    clear,
+    getCart,
+    getCheckoutItems
+  };
 })();

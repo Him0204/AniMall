@@ -44,6 +44,22 @@
     }
   }
 
+  function getSafeNextTarget() {
+    const params = new URLSearchParams(window.location.search);
+    const rawNext = String(params.get('next') || '').trim();
+    if (!rawNext) return null;
+    if (rawNext.startsWith('/') || rawNext.startsWith('//')) return null;
+    if (/[\r\n]/.test(rawNext)) return null;
+
+    const lower = rawNext.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return null;
+
+    const pathPart = rawNext.split('?')[0].split('#')[0];
+    const allowlist = new Set(['checkout.html', 'index.html', 'product.html', 'member.html', 'login.html']);
+    if (!allowlist.has(pathPart)) return null;
+    return rawNext;
+  }
+
   function setActiveSection(key) {
     Object.entries(authSections).forEach(([sectionKey, sectionEl]) => {
       if (!sectionEl) return;
@@ -104,7 +120,8 @@
     csrfToken = payload.csrfToken || csrfToken;
     setCsrfInputs(csrfToken);
     showMessage('Login successful. Redirecting...');
-    const target = payload.user && payload.user.is_admin ? 'admin.html' : 'index.html';
+    const safeNextTarget = getSafeNextTarget();
+    const target = payload.user && payload.user.is_admin ? 'admin.html' : (safeNextTarget || 'index.html');
     setTimeout(() => { window.location.href = target; }, 400);
   }
 
