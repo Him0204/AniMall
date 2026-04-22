@@ -2189,10 +2189,19 @@ a {
 .member-order-action.member-order-cancel {
   border-color: #fecaca;
   color: #b91c1c;
+  min-width: 2rem;
+  padding: 0.28rem 0.4rem;
 }
 
 .member-order-action:hover {
   background: #f8fafc;
+}
+
+.member-order-cancel-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
+  fill: currentColor;
 }
 
 @media (max-width: 960px) {
