@@ -1068,6 +1068,24 @@ app.get('/admin', async (req, res) => {
   res.redirect(`/admin.html${query}`);
 });
 
+app.get('/admin/categories', async (req, res) => {
+  const queryStart = req.originalUrl.indexOf('?');
+  const query = queryStart >= 0 ? req.originalUrl.slice(queryStart) : '';
+  res.redirect(`/admin.html${query}`);
+});
+
+app.get('/admin/products', async (req, res) => {
+  const queryStart = req.originalUrl.indexOf('?');
+  const query = queryStart >= 0 ? req.originalUrl.slice(queryStart) : '';
+  res.redirect(`/admin-products.html${query}`);
+});
+
+app.get('/admin/orders', async (req, res) => {
+  const queryStart = req.originalUrl.indexOf('?');
+  const query = queryStart >= 0 ? req.originalUrl.slice(queryStart) : '';
+  res.redirect(`/admin-orders.html${query}`);
+});
+
 app.post('/api/admin/categories', requireAuth, requireAdmin, ensureCsrfToken, requireCsrf, async (req, res) => {
   const name = sanitizeName(req.body.name);
   if (!name) return res.status(400).json({ success: false, message: 'Invalid category name' });
