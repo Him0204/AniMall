@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div id="navContainer"></div>
+  <main class="page-main page-narrow">
+    <h1 class="page-title">Checkout</h1>
+    <p id="formError" class="form-error"></p>
+    <div class="checkout-layout">
+      <aside class="checkout-summary">
+        <h2>Order Summary</h2>
+        <div id="checkoutCartItems" class="cart-items-container"></div>
+        <div class="cart-summary-row"><span>Subtotal</span><span data-cart-subtotal>$0.00</span></div>
+        <div class="cart-summary-row"><span>Tax</span><span data-cart-tax>$0.00</span></div>
+        <div class="cart-summary-row cart-total-row"><span>Total</span><span data-cart-total>$0.00</span></div>
+      </aside>
+      <section class="checkout-form-wrap">
+        <h2>Shipping Details</h2>
+        <form id="checkoutForm" class="auth-form" novalidate>
+          <div class="form-group"><label for="fullName">Full Name</label><input id="fullName" type="text" required></div>
+          <div class="form-group"><label for="email">Email</label><input id="email" type="email" required></div>
+          <div class="form-group"><label for="address">Address</label><textarea id="address" rows="3" required></textarea></div>
+          <button id="submitBtn" class="btn-primary btn-block" type="submit">Place Order</button>
+        </form>
+        <div class="divider">or</div>
+        <button id="stripeBtn" class="btn-stripe btn-block" type="button">Pay with Stripe</button>
+      </section>
+    </div>
+  </main>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/cart.js"></script>
+  <script src="/js/components.js"></script>
+  <script src="/js/checkout.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmed</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="auth-page">
+  <div class="auth-card success-card">
+    <div class="success-icon">✓</div>
+    <h1>Order Confirmed</h1>
+    <p id="orderRef"></p>
+    <a href="/" class="btn-primary">Continue Shopping</a>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get('order_id');
+    const sessionId = params.get('session_id');
+    document.getElementById('orderRef').textContent = orderId ? `Order #${orderId}` : (sessionId ? `Stripe Session: ${sessionId}` : 'Thank you for your purchase.');
+  </script>
+</body>
+</html>

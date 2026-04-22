@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopSecure</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div id="navContainer"></div>
+  <main class="page-main">
+    <section class="hero">
+      <h1>ShopSecure</h1>
+      <p>Simple secure storefront with admin panel</p>
+    </section>
+    <div class="shop-layout">
+      <aside class="sidebar">
+        <h2 class="sidebar-title">Categories</h2>
+        <div id="categoryList" class="cat-list"></div>
+      </aside>
+      <section class="shop-content">
+        <div class="search-bar">
+          <input id="searchInput" class="search-input" type="search" placeholder="Search products">
+        </div>
+        <div id="loadingSpinner" class="spinner hidden"></div>
+        <div id="productsGrid" class="products-grid"></div>
+        <div id="pagination" class="pagination"></div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer"><p>© 2026 ShopSecure</p></footer>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/cart.js"></script>
+  <script src="/js/components.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>
