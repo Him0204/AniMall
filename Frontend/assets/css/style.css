@@ -2161,9 +2161,10 @@ a {
 }
 
 .member-order-actions {
-  display: flex;
-  gap: 0.35rem;
-  flex-wrap: wrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: nowrap;
 }
 
 .member-order-action {
@@ -2186,20 +2187,30 @@ a {
   color: #b45309;
 }
 
-.member-order-action.member-order-cancel {
-  border-color: #fecaca;
-  color: #b91c1c;
-  min-width: 2rem;
-  padding: 0.28rem 0.4rem;
-}
-
 .member-order-action:hover {
   background: #f8fafc;
 }
 
+.member-order-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.member-order-cancel:hover {
+  color: #991b1b;
+}
+
 .member-order-cancel-icon {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   display: block;
   fill: currentColor;
 }
