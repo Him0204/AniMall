@@ -54,11 +54,11 @@
     const orderIdEscaped = esc(order.orderid);
     return `<div class="member-order-actions">
       <a class="member-order-action member-order-continue" href="${continueHref}">Continue Payment</a>
-      <button type="button" class="member-order-cancel" data-order-id="${orderIdEscaped}" aria-label="Cancel order #${orderIdEscaped}" title="Cancel order #${orderIdEscaped}">
+      <span class="member-order-cancel" data-order-id="${orderIdEscaped}" role="button" tabindex="0" aria-label="Cancel order #${orderIdEscaped}" title="Cancel order #${orderIdEscaped}">
         <svg class="member-order-cancel-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M9 3h6l1 2h5v2h-2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H3V5h5zm8 4H7v13h10zm-7 3h2v8h-2zm4 0h2v8h-2z"/>
         </svg>
-      </button>
+      </span>
     </div>`;
   }
 
@@ -140,6 +140,7 @@
   async function onTableClick(event) {
     const cancelBtn = event.target.closest('.member-order-cancel');
     if (!cancelBtn) return;
+    if (cancelBtn.getAttribute('aria-disabled') === 'true') return;
 
     const orderId = cancelBtn.getAttribute('data-order-id');
     if (!orderId) return;
@@ -148,7 +149,8 @@
       return;
     }
 
-    cancelBtn.disabled = true;
+    cancelBtn.setAttribute('aria-disabled', 'true');
+    cancelBtn.setAttribute('data-busy', '1');
 
     try {
       await cancelPendingOrder(orderId);
@@ -156,7 +158,20 @@
     } catch (err) {
       showMessage(err.message || 'Unable to cancel pending order.', true);
     } finally {
-      cancelBtn.disabled = false;
+      cancelBtn.removeAttribute('aria-disabled');
+      cancelBtn.removeAttribute('data-busy');
+    }
+  }
+
+  function onTableKeyDown(event) {
+    const cancelBtn = event.target.closest('.member-order-cancel');
+    if (!cancelBtn) return;
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onTableClick(event).catch((err) => {
+        showMessage(err.message || 'Unable to perform order action.', true);
+      });
     }
   }
 
@@ -171,6 +186,7 @@
             showMessage(err.message || 'Unable to perform order action.', true);
           });
         });
+        tableBody.addEventListener('keydown', onTableKeyDown);
       }
 
       await refreshOrders('Loaded your member orders.');

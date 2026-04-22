@@ -2166,39 +2166,45 @@ a {
   gap: 0.45rem;
   flex-wrap: nowrap;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .member-order-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #0f766e;
-  font-size: 0.82rem;
+  height: 30px;
+  border: 1px solid #ffd0b3;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #b45309;
+  font-size: 0.78rem;
   font-weight: 700;
   text-decoration: none;
-  padding: 0;
-  border: none;
-  background: transparent;
+  padding: 0 0.6rem;
   cursor: pointer;
 }
 
 .member-order-action.member-order-continue {
-  color: #0f766e;
+  color: #b45309;
 }
 
 .member-order-action:hover {
-  color: #115e59;
-  text-decoration: underline;
+  background: #ffedd5;
+  border-color: #ffbc8a;
+  text-decoration: none;
 }
 
 .member-order-cancel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 30px;
+  height: 30px;
   border: none;
   background: transparent;
   color: #b91c1c;
-  padding: 0.15rem;
+  padding: 0;
   margin: 0;
   line-height: 1;
   cursor: pointer;
@@ -2215,9 +2221,10 @@ a {
   border-radius: 4px;
 }
 
-.member-order-cancel:disabled {
+.member-order-cancel[aria-disabled='true'] {
   opacity: 0.55;
   cursor: not-allowed;
+  pointer-events: none;
 }
 
 .member-order-cancel-icon {
