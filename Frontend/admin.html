@@ -47,7 +47,7 @@
       <p id="admin-message" class="admin-message" hidden></p>
       <p id="admin-error" class="error-text" hidden>Unable to load admin data right now.</p>
 
-      <div class="admin-grid" hidden aria-hidden="true">
+      <div class="admin-grid admin-grid--category" hidden aria-hidden="true">
         <section class="admin-card">
           <div class="admin-section">
             <h2>Create Category</h2>
@@ -59,7 +59,9 @@
               <button type="submit" class="btn-primary">Create</button>
             </form>
           </div>
+        </section>
 
+        <section class="admin-card">
           <div class="admin-section">
             <h2>Update Category</h2>
             <form id="form-update-category">
@@ -73,7 +75,9 @@
               <button type="submit" class="btn-primary">Update</button>
             </form>
           </div>
+        </section>
 
+        <section class="admin-card admin-card--full">
           <div class="admin-section">
             <h2>Delete Category</h2>
             <form id="form-delete-category">

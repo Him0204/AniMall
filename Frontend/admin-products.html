@@ -47,7 +47,7 @@
       <p id="admin-message" class="admin-message" hidden></p>
       <p id="admin-error" class="error-text" hidden>Unable to load admin data right now.</p>
 
-      <div class="admin-grid" hidden aria-hidden="true">
+      <div class="admin-grid admin-grid--product" hidden aria-hidden="true">
         <section class="admin-card">
           <div class="admin-section">
             <h2>Create Product</h2>
@@ -74,7 +74,9 @@
               <button type="submit" class="btn-primary">Create Product</button>
             </form>
           </div>
+        </section>
 
+        <section class="admin-card">
           <div class="admin-section">
             <h2>Update Product</h2>
             <form id="form-update-product" enctype="multipart/form-data">
@@ -107,7 +109,9 @@
               <button type="submit" class="btn-primary">Update Product</button>
             </form>
           </div>
+        </section>
 
+        <section class="admin-card admin-card--full">
           <div class="admin-section">
             <h2>Delete Product</h2>
             <form id="form-delete-product">
