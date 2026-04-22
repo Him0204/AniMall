@@ -121,7 +121,7 @@
     setCsrfInputs(csrfToken);
     showMessage('Login successful. Redirecting...');
     const safeNextTarget = getSafeNextTarget();
-    const target = payload.user && payload.user.is_admin ? 'admin.html' : (safeNextTarget || 'index.html');
+    const target = payload.user && payload.user.is_admin ? '/admin' : (safeNextTarget || 'index.html');
     setTimeout(() => { window.location.href = target; }, 400);
   }
 

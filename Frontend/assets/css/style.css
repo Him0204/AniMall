@@ -1642,6 +1642,10 @@ a {
     padding: 0.45rem 0.75rem;
     font-size: 0.8rem;
   }
+
+  .admin-mobile-nav {
+    display: block;
+  }
 }
 
 @media (max-width: 767px) {
@@ -1861,6 +1865,32 @@ a {
   padding-bottom: 0.75rem;
   border-bottom: 3px solid #ff8c42;
   display: inline-block;
+}
+
+.admin-header-main {
+  gap: 1rem;
+}
+
+.admin-primary-nav {
+  gap: 0.45rem;
+}
+
+.admin-primary-nav a {
+  font-weight: 700;
+}
+
+.admin-mobile-nav {
+  display: none;
+  width: 100%;
+  margin-left: 0;
+  padding: 0.5rem 0 0;
+  border-top: none;
+}
+
+.admin-mobile-nav .mobile-nav-list > li > a {
+  border-bottom: none;
+  border-radius: 6px;
+  padding: 0.7rem 0.9rem;
 }
 
 .admin-grid {

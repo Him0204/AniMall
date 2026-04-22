@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <title>AniMall - Admin Products</title>
+</head>
+<body>
+  <div class="site-wrapper">
+    <header class="site-header" role="banner">
+      <div class="container">
+        <div class="header-main admin-header-main">
+          <div class="header-brand">
+            <a class="logo" href="index.html" aria-label="AniMall home">
+              <img class="logo-icon" src="assets/img/icon-paw.png" alt="" aria-hidden="true">
+              <span class="logo-text">AniMall</span>
+            </a>
+          </div>
+
+          <nav class="header-nav desktop-nav" aria-label="Admin navigation">
+            <ul class="primary-nav admin-primary-nav">
+              <li><a href="admin.html">Categories</a></li>
+              <li><a href="admin-products.html" aria-current="page">Products</a></li>
+              <li><a href="admin-orders.html">Orders</a></li>
+            </ul>
+          </nav>
+
+          <div class="header-actions">
+            <span class="user-label" aria-live="polite">Guest</span>
+            <a class="login-btn" href="login.html" aria-label="Login">Login</a>
+          </div>
+        </div>
+
+        <nav class="mobile-nav admin-mobile-nav" aria-label="Admin mobile navigation">
+          <ul class="mobile-nav-list">
+            <li><a href="admin.html">Categories</a></li>
+            <li><a href="admin-products.html" aria-current="page">Products</a></li>
+            <li><a href="admin-orders.html">Orders</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main class="admin-page">
+      <h1 hidden aria-hidden="true">Admin Panel - Products</h1>
+      <p id="admin-message" class="admin-message" hidden></p>
+      <p id="admin-error" class="error-text" hidden>Unable to load admin data right now.</p>
+
+      <div class="admin-grid" hidden aria-hidden="true">
+        <section class="admin-card">
+          <div class="admin-section">
+            <h2>Create Product</h2>
+            <form id="form-create-product" enctype="multipart/form-data">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Category
+                <select name="catid" id="create-product-catid" required></select>
+              </label>
+              <label>Name
+                <input name="name" maxlength="120" required placeholder="Product name" pattern=".*\S.*">
+              </label>
+              <label>Price
+                <input name="price" type="number" min="0" max="999999" step="0.01" required placeholder="0.00" inputmode="decimal">
+              </label>
+              <label>Description
+                <textarea name="description" rows="3" maxlength="1000" placeholder="Product description..."></textarea>
+              </label>
+              <label>Type
+                <select name="type" id="create-product-type" required></select>
+              </label>
+              <label>Images (JPG/PNG, up to 8)
+                <input name="images" type="file" accept=".jpg,.jpeg,.png" multiple>
+              </label>
+              <button type="submit" class="btn-primary">Create Product</button>
+            </form>
+          </div>
+
+          <div class="admin-section">
+            <h2>Update Product</h2>
+            <form id="form-update-product" enctype="multipart/form-data">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Product
+                <select name="pid" id="update-product-pid" required></select>
+              </label>
+              <label>Category (optional)
+                <select name="catid" id="update-product-catid">
+                  <option value="">- keep existing -</option>
+                </select>
+              </label>
+              <label>Name (optional)
+                <input name="name" maxlength="120" placeholder="leave blank to keep existing" pattern=".*\S.*">
+              </label>
+              <label>Price (optional)
+                <input name="price" type="number" min="0" max="999999" step="0.01" placeholder="leave blank to keep existing" inputmode="decimal">
+              </label>
+              <label>Description (optional)
+                <textarea name="description" rows="3" maxlength="1000" placeholder="leave blank to keep existing"></textarea>
+              </label>
+              <label>Type (optional)
+                <select name="type" id="update-product-type">
+                  <option value="">- keep existing -</option>
+                </select>
+              </label>
+              <label>Replace Images (optional)
+                <input name="images" type="file" accept=".jpg,.jpeg,.png" multiple>
+              </label>
+              <button type="submit" class="btn-primary">Update Product</button>
+            </form>
+          </div>
+
+          <div class="admin-section">
+            <h2>Delete Product</h2>
+            <form id="form-delete-product">
+              <input type="hidden" name="csrfToken" class="csrf-token-input">
+              <label>Product
+                <select name="pid" id="delete-product-pid" required></select>
+              </label>
+              <button type="submit" class="btn-danger">Delete</button>
+            </form>
+          </div>
+        </section>
+      </div>
+
+      <a class="admin-back-link" href="index.html" hidden aria-hidden="true">&#8592; Back to Store</a>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container">
+        <div class="footer-bottom">
+          <p>&copy; 2026 AniMall (IERG4210 Assignment).</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="assets/js/user.js" defer></script>
+  <script src="assets/js/admin.js" defer></script>
+</body>
+</html>
