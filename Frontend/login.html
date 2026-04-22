@@ -131,7 +131,6 @@
             </form>
             <p class="auth-links" aria-label="Auth navigation">
               <span>Need an account? <a href="#register-section" data-auth-target="register">Create one</a>.</span>
-              <span>Forgot password? <a href="#password-section" data-auth-target="password">Reset it</a>.</span>
             </p>
           </div>
         </section>
@@ -157,30 +156,6 @@
             </form>
             <p class="auth-links" aria-label="Registration navigation">
               <span>Already have an account? <a href="#login-section" data-auth-target="login">Back to login</a>.</span>
-              <span>Forgot password? <a href="#password-section" data-auth-target="password">Reset it</a>.</span>
-            </p>
-          </div>
-        </section>
-
-        <section class="admin-card auth-panel" id="password-section">
-          <div class="admin-section">
-            <h2>Change Password</h2>
-            <form id="password-form">
-              <input type="hidden" name="csrfToken" class="csrf-token-input">
-              <label>Current Password
-                <input type="password" name="currentPassword" autocomplete="current-password" required minlength="10" placeholder="Current password">
-              </label>
-              <label>New Password (letters, numbers, 10-64 chars)
-                <input type="password" name="newPassword" autocomplete="new-password" required minlength="10" maxlength="64" pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+=-]{10,64}" placeholder="New strong password (no spaces/quotes)">
-              </label>
-              <label>Confirm New Password
-                <input type="password" name="confirmPassword" autocomplete="new-password" required minlength="10" maxlength="64" pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+=-]{10,64}" placeholder="Re-enter new password">
-              </label>
-              <button type="submit" class="btn-primary">Update Password</button>
-            </form>
-            <p class="auth-links" aria-label="Password navigation">
-              <span>Remembered it? <a href="#login-section" data-auth-target="login">Back to login</a>.</span>
-              <span>Need an account? <a href="#register-section" data-auth-target="register">Create one</a>.</span>
             </p>
           </div>
         </section>

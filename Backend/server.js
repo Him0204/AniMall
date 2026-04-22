@@ -27,6 +27,18 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const STRIPE_CURRENCY = String(process.env.STRIPE_CURRENCY || 'hkd').toLowerCase();
 const MERCHANT_IDENTIFIER = String(process.env.MERCHANT_IDENTIFIER || 'IERG4210');
 const ORDER_DIGEST_SECRET = process.env.ORDER_DIGEST_SECRET || SESSION_SECRET;
+const STRIPE_WEBHOOK_PATHS = ['/api/webhooks/stripe', '/api/webhook/stripe'];
+
+function normalizeRequestPath(urlLike) {
+  const pathOnly = String(urlLike || '').split('?')[0];
+  const trimmed = pathOnly.replace(/\/+$/, '');
+  return trimmed || '/';
+}
+
+function isStripeWebhookRequest(req) {
+  const requestPath = normalizeRequestPath(req && (req.originalUrl || req.url));
+  return STRIPE_WEBHOOK_PATHS.includes(requestPath);
+}
 
 let stripe = null;
 if (STRIPE_SECRET_KEY) {
@@ -71,7 +83,7 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(express.json({
   limit: '1mb',
   verify: (req, res, buf) => {
-    if (req.originalUrl.startsWith('/api/webhooks/stripe')) {
+    if (isStripeWebhookRequest(req)) {
       req.rawBody = Buffer.from(buf);
     }
   }
@@ -499,35 +511,6 @@ app.post('/api/auth/logout', requireAuth, ensureCsrfToken, requireCsrf, (req, re
   });
 });
 
-app.post('/api/auth/change-password', requireAuth, ensureCsrfToken, requireCsrf, async (req, res) => {
-  const currentPassword = String(req.body.currentPassword || '');
-  const newPassword = validatePassword(req.body.newPassword);
-  const confirmPassword = String(req.body.confirmPassword || '');
-
-  if (!newPassword || newPassword !== confirmPassword) {
-    return res.status(400).json({ error: 'Invalid password change input.' });
-  }
-
-  try {
-    const user = await getAsync('SELECT userid, password_hash FROM users WHERE userid = ?', [req.session.user.userid]);
-    if (!user) return res.status(401).json({ error: 'Session is invalid.' });
-
-    const match = await bcrypt.compare(currentPassword, user.password_hash);
-    if (!match) return res.status(401).json({ error: 'Current password is incorrect.' });
-
-    const newHash = await bcrypt.hash(newPassword, 12);
-    const now = Date.now();
-    await runAsync('UPDATE users SET password_hash = ?, updated_at = ? WHERE userid = ?', [newHash, now, user.userid]);
-
-    req.session.destroy(() => {
-      res.clearCookie(SESSION_COOKIE_NAME);
-      res.json({ success: true, message: 'Password changed. Please log in again.' });
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Unable to change password at this time.' });
-  }
-});
-
 app.get('/api/categories', async (req, res) => {
   try {
     const rows = await allAsync('SELECT catid, name FROM categories ORDER BY catid');
@@ -646,7 +629,7 @@ app.post('/api/checkout', requireAuth, ensureCsrfToken, requireCsrf, async (req,
   }
 });
 
-app.post('/api/webhooks/stripe', async (req, res) => {
+app.post(STRIPE_WEBHOOK_PATHS, async (req, res) => {
   if (!stripe || !STRIPE_WEBHOOK_SECRET) {
     return res.status(503).json({ error: 'Webhook service is unavailable.' });
   }

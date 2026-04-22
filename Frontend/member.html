@@ -22,7 +22,34 @@
           <nav class="header-nav desktop-nav" aria-label="Main navigation">
             <ul class="primary-nav">
               <li><a href="index.html">Home</a></li>
-              <li><a href="member.html" aria-current="page">Member Portal</a></li>
+              <li class="shop-menu">
+                <a href="index.html" aria-haspopup="true">Shop</a>
+                <ul class="shop-submenu" aria-label="Shop categories">
+                  <li class="submenu-parent">
+                    <a href="index.html">Animals</a>
+                    <ul class="shop-subsubmenu">
+                      <li><a href="index.html" data-cat-name="Dogs">Dogs</a></li>
+                      <li><a href="index.html" data-cat-name="Cats">Cats</a></li>
+                      <li><a href="index.html" data-cat-name="Fish">Fish</a></li>
+                      <li><a href="index.html" data-cat-name="Birds">Birds</a></li>
+                      <li><a href="index.html" data-cat-name="Small Pets">Small Pets</a></li>
+                    </ul>
+                  </li>
+                  <li class="submenu-parent">
+                    <a href="index.html">Products</a>
+                    <ul class="shop-subsubmenu">
+                      <li><a href="index.html" data-type="Toys">Toys</a></li>
+                      <li><a href="index.html" data-type="Treats">Treats</a></li>
+                      <li><a href="index.html" data-type="Food">Food</a></li>
+                      <li><a href="index.html" data-type="Care">Care</a></li>
+                      <li><a href="index.html" data-type="Accessories">Accessories</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li><a href="index.html#about">About Us</a></li>
+              <li><a href="index.html#contact">Contact Us</a></li>
+              <li><a href="member.html" aria-current="page">Member</a></li>
               <li><a class="admin-link" href="admin.html">Admin</a></li>
             </ul>
           </nav>
@@ -46,7 +73,37 @@
         <nav class="mobile-nav" aria-label="Mobile navigation">
           <ul class="mobile-nav-list">
             <li><a href="index.html">Home</a></li>
-            <li><a href="member.html" aria-current="page">Member Portal</a></li>
+            <li class="mobile-shop-menu">
+              <input type="checkbox" id="shop-toggle" class="shop-toggle-input" aria-label="Toggle shop categories">
+              <label for="shop-toggle" class="mobile-shop-label">Shop</label>
+              <ul class="mobile-submenu">
+                <li class="mobile-submenu-parent">
+                  <input type="checkbox" id="animal-toggle" class="subsubmenu-toggle-input" aria-label="Toggle animal categories">
+                  <label for="animal-toggle" class="mobile-subsubmenu-label">Animals</label>
+                  <ul class="mobile-subsubmenu">
+                    <li><a href="index.html" data-cat-name="Dogs">Dogs</a></li>
+                    <li><a href="index.html" data-cat-name="Cats">Cats</a></li>
+                    <li><a href="index.html" data-cat-name="Fish">Fish</a></li>
+                    <li><a href="index.html" data-cat-name="Birds">Birds</a></li>
+                    <li><a href="index.html" data-cat-name="Small Pets">Small Pets</a></li>
+                  </ul>
+                </li>
+                <li class="mobile-submenu-parent">
+                  <input type="checkbox" id="product-toggle" class="subsubmenu-toggle-input" aria-label="Toggle product categories">
+                  <label for="product-toggle" class="mobile-subsubmenu-label">Products</label>
+                  <ul class="mobile-subsubmenu">
+                    <li><a href="index.html" data-type="Toys">Toys</a></li>
+                    <li><a href="index.html" data-type="Treats">Treats</a></li>
+                    <li><a href="index.html" data-type="Food">Food</a></li>
+                    <li><a href="index.html" data-type="Care">Care</a></li>
+                    <li><a href="index.html" data-type="Accessories">Accessories</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li><a href="index.html#about">About Us</a></li>
+            <li><a href="index.html#contact">Contact Us</a></li>
+            <li><a href="member.html" aria-current="page">Member</a></li>
             <li><a class="admin-link" href="admin.html">Admin</a></li>
           </ul>
         </nav>
@@ -88,8 +145,47 @@
 
     <footer class="site-footer" role="contentinfo">
       <div class="container">
+        <div class="footer-content">
+          <section class="footer-section">
+            <h4>About AniMall</h4>
+            <ul>
+              <li><a href="index.html">About Us</a></li>
+              <li><a href="index.html">Careers</a></li>
+              <li><a href="index.html">Blog</a></li>
+            </ul>
+          </section>
+
+          <section class="footer-section">
+            <h4>Customer Service</h4>
+            <ul>
+              <li><a href="index.html">Contact Us</a></li>
+              <li><a href="index.html">FAQ</a></li>
+              <li><a href="index.html">Shipping Info</a></li>
+              <li><a href="index.html">Returns</a></li>
+            </ul>
+          </section>
+
+          <section class="footer-section">
+            <h4>Policies</h4>
+            <ul>
+              <li><a href="index.html">Privacy Policy</a></li>
+              <li><a href="index.html">Terms of Service</a></li>
+              <li><a href="index.html">Cookie Policy</a></li>
+            </ul>
+          </section>
+
+          <section class="footer-section">
+            <h4>Follow Us</h4>
+            <ul>
+              <li><a href="index.html">Facebook</a></li>
+              <li><a href="index.html">Instagram</a></li>
+              <li><a href="index.html">Twitter</a></li>
+            </ul>
+          </section>
+        </div>
+
         <div class="footer-bottom">
-          <p>&copy; 2026 AniMall (IERG4210 Assignment).</p>
+          <p>&copy; 2026 AniMall (IERG4210 Assignment). All rights reserved.</p>
         </div>
       </div>
     </footer>

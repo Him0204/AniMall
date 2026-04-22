@@ -3,11 +3,10 @@
   const errorEl = document.getElementById('auth-error');
   const loginForm = document.getElementById('login-form');
   const registerForm = document.getElementById('register-form');
-  const passwordForm = document.getElementById('password-form');
+  const REGISTER_FLASH_KEY = 'animall_register_success';
   const authSections = {
     login: document.getElementById('login-section'),
-    register: document.getElementById('register-section'),
-    password: document.getElementById('password-section')
+    register: document.getElementById('register-section')
   };
 
   let csrfToken = '';
@@ -144,47 +143,9 @@
       throw new Error(payload.error || 'Registration failed.');
     }
 
-    showMessage('Registration successful. You can now log in.');
     registerForm.reset();
-  }
-
-  async function handleChangePassword(event) {
-    event.preventDefault();
-    clearMessages();
-
-    const formData = new FormData(passwordForm);
-    const currentPassword = String(formData.get('currentPassword') || '');
-    const newPassword = String(formData.get('newPassword') || '');
-    const confirmPassword = String(formData.get('confirmPassword') || '');
-
-    if (!currentPassword) {
-      showMessage('Please provide your current password.', true);
-      return;
-    }
-
-    if (!isStrongPassword(newPassword) || newPassword !== confirmPassword) {
-      showMessage('Please provide matching strong new passwords (letters, numbers, 10-64 chars, no spaces/quotes).', true);
-      return;
-    }
-
-    const response = await fetch('/api/auth/change-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-csrf-token': csrfToken
-      },
-      credentials: 'same-origin',
-      body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
-    });
-
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || !payload.success) {
-      throw new Error(payload.error || 'Unable to change password.');
-    }
-
-    showMessage('Password changed. Please log in again.');
-    passwordForm.reset();
-    setTimeout(() => { window.location.href = 'login.html'; }, 500);
+    sessionStorage.setItem(REGISTER_FLASH_KEY, 'Account created successfully. Please log in.');
+    window.location.href = 'login.html?from=register';
   }
 
   async function init() {
@@ -207,8 +168,21 @@
       });
     });
 
-    // Default to login panel
-    setActiveSection('login');
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from');
+    const isRegisterReturn = from === 'register' || params.get('registered') === '1';
+    if (isRegisterReturn) {
+      const flash = sessionStorage.getItem(REGISTER_FLASH_KEY) || 'Account created successfully. Please log in.';
+      sessionStorage.removeItem(REGISTER_FLASH_KEY);
+      setActiveSection('login');
+      showMessage(flash);
+      params.delete('from');
+      params.delete('registered');
+      const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, '', nextUrl);
+    } else {
+      setActiveSection('login');
+    }
 
     loginForm.addEventListener('submit', (event) => {
       handleLogin(event).catch((err) => showMessage(err.message, true));
@@ -217,12 +191,6 @@
     registerForm.addEventListener('submit', (event) => {
       handleRegister(event).catch((err) => showMessage(err.message, true));
     });
-
-    if (passwordForm) {
-      passwordForm.addEventListener('submit', (event) => {
-        handleChangePassword(event).catch((err) => showMessage(err.message, true));
-      });
-    }
   }
 
   init();
