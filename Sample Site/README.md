@@ -25,9 +25,10 @@
     - or use `pm2` to `start server.js`
 
 
-## Default admin
-- Email: `admin@shop.com`
-- Password: `Admin@1234`
+## Admin setup
+
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` before the first startup.
+The sample does not contain a published default administrator password.
 
 
 ## Known Issues / to be fixed

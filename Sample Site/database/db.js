@@ -81,9 +81,16 @@ function initializeDatabase() {
 
   const admin = db.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").get();
   if (!admin) {
-    const hash = bcrypt.hashSync('Admin@1234', 12);
-    db.prepare("INSERT INTO users (username,email,password_hash,role) VALUES (?,?,?,'admin')")
-      .run('admin', 'admin@shop.com', hash);
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (adminPassword) {
+      const hash = bcrypt.hashSync(adminPassword, 12);
+      db.prepare("INSERT INTO users (username,email,password_hash,role) VALUES (?,?,?,'admin')")
+        .run(
+          process.env.ADMIN_USERNAME || 'admin',
+          process.env.ADMIN_EMAIL || 'admin@example.com',
+          hash
+        );
+    }
   }
 
   const count = db.prepare('SELECT COUNT(*) AS c FROM categories').get().c;

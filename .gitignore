@@ -1,5 +1,6 @@
 Backend/node_modules/
 Backend/db/*.sqlite
+Backend/db/*.sqlite-*
 Frontend/assets/uploads/
 Frontend/Phase1 Ref/
 Backend/.env

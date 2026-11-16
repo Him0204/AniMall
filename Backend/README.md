@@ -1,4 +1,7 @@
-# AniMall Phase 4
+# AniMall backend
+
+The backend serves the static frontend, JSON APIs, session authentication, SQLite
+storage, image uploads, and optional Stripe checkout/webhooks.
 
 ## Install
 ```bash
@@ -6,12 +9,19 @@ cd Backend
 npm install
 ```
 
-## Initialize DB
+## Configure
+
+Copy `.env.example` to `.env` and set at least a long random `SESSION_SECRET`.
+To create an administrator during migration, also set `ADMIN_EMAIL` and
+`ADMIN_PASSWORD`. `DEMO_USER_EMAIL` and `DEMO_USER_PASSWORD` are optional.
+Never commit `.env` or generated SQLite files.
+
+## Initialize the database
 ```bash
 npm run init-db
 ```
 
-## Mirgrate DB
+## Apply migrations
 ```bash
 npm run migrate-db
 ```
@@ -21,9 +31,9 @@ npm run migrate-db
 npm start
 ```
 
-## Phase 5 Stripe setup
+## Stripe setup (optional)
 
-1. Configure environment variables in Backend/.env
+Set these variables in `Backend/.env`:
 
 ```bash
 APP_BASE_URL=http://localhost:3000
@@ -34,13 +44,13 @@ MERCHANT_EMAIL=merchant@example.com
 ORDER_DIGEST_SECRET=long-random-secret
 ```
 
-2. Re-run migration to ensure Phase 5 tables exist
+Then re-run the migration to create the checkout tables:
 
 ```bash
 npm run migrate-db
 ```
 
-3. Stripe webhook target (local)
+Stripe webhook endpoint:
 
 ```text
 POST /api/webhooks/stripe

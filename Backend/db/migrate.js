@@ -1,12 +1,13 @@
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'animall.sqlite');
-const ADMIN_EMAIL = 'admin@animall.local';
-const ADMIN_PASSWORD = 'AdminPass123!';
-const USER_EMAIL = 'user@animall.local';
-const USER_PASSWORD = 'UserPass123!';
+const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const DEMO_USER_EMAIL = String(process.env.DEMO_USER_EMAIL || '').trim().toLowerCase();
+const DEMO_USER_PASSWORD = process.env.DEMO_USER_PASSWORD || '';
 
 const db = new sqlite3.Database(dbPath);
 
@@ -111,24 +112,33 @@ async function ensurePhase5Tables() {
 
 async function seedUsers() {
   const now = Date.now();
-  const adminHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
-  const userHash = await bcrypt.hash(USER_PASSWORD, 12);
+  if (ADMIN_EMAIL || ADMIN_PASSWORD) {
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+      throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD must be provided together.');
+    }
+    const adminHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
+    await runAsync('INSERT OR IGNORE INTO users (email, password_hash, name, is_admin, created_at, updated_at) VALUES (?, ?, ?, 1, ?, ?)', [
+      ADMIN_EMAIL,
+      adminHash,
+      'Admin',
+      now,
+      now
+    ]);
+  }
 
-  await runAsync('INSERT OR IGNORE INTO users (email, password_hash, name, is_admin, created_at, updated_at) VALUES (?, ?, ?, 1, ?, ?)', [
-    ADMIN_EMAIL,
-    adminHash,
-    'Admin',
-    now,
-    now
-  ]);
-
-  await runAsync('INSERT OR IGNORE INTO users (email, password_hash, name, is_admin, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?)', [
-    USER_EMAIL,
-    userHash,
-    'Customer',
-    now,
-    now
-  ]);
+  if (DEMO_USER_EMAIL || DEMO_USER_PASSWORD) {
+    if (!DEMO_USER_EMAIL || !DEMO_USER_PASSWORD) {
+      throw new Error('DEMO_USER_EMAIL and DEMO_USER_PASSWORD must be provided together.');
+    }
+    const userHash = await bcrypt.hash(DEMO_USER_PASSWORD, 12);
+    await runAsync('INSERT OR IGNORE INTO users (email, password_hash, name, is_admin, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?)', [
+      DEMO_USER_EMAIL,
+      userHash,
+      'Customer',
+      now,
+      now
+    ]);
+  }
 }
 
 async function main() {
